@@ -22,29 +22,33 @@ class GameHero:
         self.isDown = False
         self.isEnd = False
         self.life = 3
+        self.isLeft = False
         self.timePoint = 100000
         self.isWin = False
+        self.keysC = 0
 
     def start_pos(self, size, cubeC, map, allBlockSt):
         self.isUp = False
         self.isDown = False
         self.collision = []
         self.blockSize = int(size[1]/cubeC)
-        self.chHight = int(self.blockSize * 1.9)
-        self.chWidth = int(self.blockSize * 0.9)
+        self.chHight = int(self.blockSize * 1.8)
+        self.chWidth = int(self.blockSize * 0.8)
         self.chSpeed = int(self.blockSize/3)
         self.isJump = False
         self.maxJump = int(size[1]/75)
         self.jumpCount = self.maxJump
         self.mapArr = map
         self.chObj = pygame.Rect(self.blockSize + 5, self.blockSize * 17 + 5, self.chWidth, self.chHight)
-        self.chImg = pygame.image.load("b.png")
+        self.chImg = [pygame.image.load("img/c1.png"), pygame.image.load("img/c2.png"),
+                      pygame.image.load("img/c3.png"), pygame.image.load("img/c4.png")]
         self.collisionTypes = {'top': False, 'right': False, 'bottom': False, 'left': False}
         self.allBlockSt = allBlockSt
         self.isEnd = False
         self.life = 3
         self.timePoint = 100000
         self.isWin = False
+        self.keysC = 0
 
     def set_jump(self, val):
         self.isJump = val
@@ -119,6 +123,7 @@ class GameHero:
             blockMaterial = self.mapArr[y][x]
             if blockMaterial == 4:
                 self.mapArr[y][x] = 0
+                self.keysC += 1
             if blockMaterial == 5 and self.all_pick() == 0:
                 self.isEnd = True
                 self.isWin = True
