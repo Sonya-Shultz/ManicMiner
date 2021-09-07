@@ -126,7 +126,7 @@ class GameMap:
             self.mapArr[y][x] = 8
 
     def create_key(self):
-        keyAmount = 5
+        keyAmount = random.randint(5, 10)
         for i in range(keyAmount):
             isTake = True
             x = 0
