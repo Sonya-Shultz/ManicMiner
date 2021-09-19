@@ -39,7 +39,7 @@ class GameHero:
         self.maxJump = int(size[1]/75)
         self.jumpCount = self.maxJump
         self.mapArr = map
-        self.chObj = pygame.Rect(self.blockSize + 5, self.blockSize * 17 + 5, self.chWidth, self.chHight)
+        self.chObj = pygame.Rect(self.blockSize + 5, self.blockSize * 16 + 5, self.chWidth, self.chHight)
         self.chImg = [pygame.image.load("img/c1.png"), pygame.image.load("img/c2.png"),
                       pygame.image.load("img/c3.png"), pygame.image.load("img/c4.png")]
         self.collisionTypes = {'top': False, 'right': False, 'bottom': False, 'left': False}
