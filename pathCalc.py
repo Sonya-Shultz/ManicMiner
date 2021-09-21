@@ -15,7 +15,6 @@ class PathCalc:
         self.way = []
         self.key_count = 0
         self.max_key = 0
-        self.all_key = []
 
     def start_dfs(self, pos):
         pos_n = [pos[0], pos[1]]
@@ -27,8 +26,8 @@ class PathCalc:
         while self.max_key > 0:
             self.key_count = 0
             pos_n, parents = self.step_dfs(pos_n, pos_n, parents)
-            h_arr = self.find_way(parents, pos, pos_n)
             if pos_n[0] != pos[0] or pos[1] != pos_n[1]:
+                h_arr = self.find_way(parents, pos, pos_n)
                 self.max_key -= 1
                 for j in range(1, len(h_arr)):
                     self.used[h_arr[j][1]][h_arr[j][0]] = 1
@@ -46,18 +45,17 @@ class PathCalc:
         for i in range(len(self.graph)):
             for j in range(len(self.graph[i])):
                 if self.graph[i][j] == 4:
-                    self.all_key.append([j, i])
                     self.max_key += 1
 
     def step_dfs(self, pos, new_pos, parents):
         self.used[pos[1]][pos[0]] = 1
-        list_of_near = self.find_near(pos)
         if self.graph[pos[1]][pos[0]] == 4:
             self.key_count += 1
             self.graph[pos[1]][pos[0]] = 0
             new_pos = [pos[0], pos[1]]
             return new_pos, parents
-        else:
+        elif self.key_count < 1:
+            list_of_near = self.find_near(pos)
             for i in list_of_near:
                 if self.key_count < 1:
                     parents[i[1]][i[0]] = pos
@@ -68,11 +66,9 @@ class PathCalc:
     def find_near(self, pos):
         list_of_near = []
         all_pos = [[pos[0] + 1, pos[1]], [pos[0], pos[1] - 1], [pos[0] - 1, pos[1]], [pos[0], pos[1] + 1]]
-        for i in range(len(all_pos)):
-            if i != 3 and self.y_len > all_pos[i][1] >= 0 <= all_pos[i][0] < self.x_len:
+        for i in range(len(all_pos)-1):
                 list_of_near = self.is_free([all_pos[i][0], all_pos[i][1]], False, list_of_near)
-            elif i == 3:
-                list_of_near = self.is_free([all_pos[3][0], all_pos[3][1]], True, list_of_near)
+        list_of_near = self.is_free([all_pos[len(all_pos)-1][0], all_pos[len(all_pos)-1][1]], True, list_of_near)
         for i in list_of_near:
             if self.graph[i[1]][i[0]] == 4:
                 list_of_near = [i]
@@ -80,12 +76,12 @@ class PathCalc:
 
     def is_free(self, pos, is_down, list_n):
         ok_state = [0, 4, 5, 6, 7, 8]
-        if is_down:
-            if self.used[pos[1]][pos[0]] == 0 and self.graph[pos[1]][pos[0]] in ok_state + [3]:
+        if -1 < pos[0] < self.x_len and -1 < pos[1] < self.y_len:
+            if is_down:
+                if self.used[pos[1]][pos[0]] == 0 and self.graph[pos[1]][pos[0]] in ok_state + [3]:
+                    list_n.append(pos)
+            elif self.used[pos[1]][pos[0]] == 0 and self.graph[pos[1]][pos[0]] in ok_state + [2]:
                 list_n.append(pos)
-        elif self.used[pos[1]][pos[0]] == 0 <= pos[1]-1 and self.graph[pos[1]-1][pos[0]] in ok_state + [2] \
-                and self.graph[pos[1]][pos[0]] in ok_state + [2]:
-            list_n.append(pos)
         return list_n
 
     def find_way(self, parents, start, end):
