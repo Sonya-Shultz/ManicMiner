@@ -1,3 +1,4 @@
+import math
 import time
 from queue import PriorityQueue
 
@@ -219,6 +220,57 @@ class PathCalc:
                         stack_h.put((dist[el[1]][el[0]], el))
                         used_h[el[1]][el[0]] = 1
         return new_pos, parents
+
+    def start_a_star(self, pos, ch_pos):
+        self.way = []
+        self.start_time = time.time()
+        self.count_k()
+        self.used = [[0] * int(self.x_len) for j in range(self.y_len)]
+        parents = [[0, 0] * int(self.x_len) for j in range(self.y_len)]
+        dist = [[0] * int(self.x_len) for j in range(self.y_len)]
+        pos_n = [pos[0], pos[1]]
+        pos_n, parents = self.step_a_star(pos_n, pos_n, PriorityQueue(), parents, dist, ch_pos)
+        if pos_n[0] != pos[0] or pos[1] != pos_n[1]:
+            self.max_key -= 1
+            h_arr = self.find_way(parents, pos, pos_n)
+            for j in range(1, len(h_arr)):
+                self.way.append(h_arr[j])
+        self.end_time = time.time()
+        self.time = (-self.start_time + self.end_time) * 1000
+        # print("A* time is " + str(self.time) + "ms")
+        return self.way
+
+    def step_a_star(self, pos, new_pos, stack_h, parents, dist, ch_pos):
+        used_h = [[0] * int(self.x_len) for j in range(self.y_len)]
+        used_h[pos[1]][pos[0]] = 1
+
+        dist[pos[1]][pos[0]] = 0
+        stack_h.put((dist[pos[1]][pos[0]], pos))
+        while not stack_h.empty():
+            h_pos = (stack_h.get())[1]
+            list_of_near = self.find_near(h_pos)
+            if h_pos[1] == ch_pos[1] and h_pos[0] == ch_pos[0]:
+                self.graph[h_pos[1]][h_pos[0]] = 0
+                new_pos = [h_pos[0], h_pos[1]]
+                return new_pos, parents
+            else:
+                for el in list_of_near:
+                    h_dist = dist[h_pos[1]][h_pos[0]] + self.calc_way(ch_pos, el) + 1
+                    if used_h[el[1]][el[0]] != 0:
+                        if dist[el[1]][el[0]] > h_dist:
+                            parents[el[1]][el[0]] = [h_pos[0], h_pos[1]]
+                            dist[el[1]][el[0]] = h_dist
+                            stack_h, dist = self.retouch_dist(stack_h, el, dist)
+                    else:
+                        parents[el[1]][el[0]] = [h_pos[0], h_pos[1]]
+                        dist[el[1]][el[0]] = h_dist
+                        stack_h.put((dist[el[1]][el[0]], el))
+                        used_h[el[1]][el[0]] = 1
+        return new_pos, parents
+
+    @staticmethod
+    def calc_way(ch_pos, el):
+        return math.sqrt((ch_pos[0]-el[0])**2 + (ch_pos[1]-el[1])**2)
 
     @staticmethod
     def retouch_dist(stack_h, pos, dist):

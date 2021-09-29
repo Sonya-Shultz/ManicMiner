@@ -66,16 +66,16 @@ class GameWindow:
                 if gMap[a][b] == 6:
                     self.gameArea.blit(pygame.transform.scale(self.en1Img, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
-                    self.gameObj.append([pygame.Rect(pos), 0, 6])
+                    self.gameObj.append([pygame.Rect(pos), 0, 6, 1])
                 if gMap[a][b] == 7:
-                    self.gameArea.blit(pygame.transform.scale(self.en2Img[0], (self.blockSize, self.blockSize)),
+                    self.gameArea.blit(pygame.transform.scale(self.en2Img[0], (self.blockSize - 5, self.blockSize - 5)),
                                        (self.blockSize * b, self.blockSize * a))
-                    self.gameObj.append([pygame.Rect(pos), 0, 7])
+                    self.gameObj.append([pygame.Rect(pos), 0, 7, 1])
                 if gMap[a][b] == 8:
                     self.gameArea.blit(pygame.transform.scale(self.en3Img, (2 * self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
                     self.gameObj.append([pygame.Rect(int(b * self.blockSize), int(a * self.blockSize),
-                                                     2 * int(self.blockSize), int(self.blockSize)), 0, 8])
+                                                     2 * int(self.blockSize), int(self.blockSize)), 0, 8, 1])
 
     def run_menu_loop(self):
         while self.menu:
@@ -171,8 +171,9 @@ class GameWindow:
             keys = pygame.key.get_pressed()
             my_keys = [0, 0, 0]
             self.calc = PathCalc(self.map.mapArr)
-            self.way = self.calc.start_smpl_bfs(self.get_ch_pos())
+            self.way = self.calc.start_smpl_bfs(self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
             my_keys = self.ch_automatic_move(self.way)
+            all_way = self.find_ch_for_enemy()
             if keys[pygame.K_ESCAPE]:
                 self.character.isEnd = True
                 self.subMenuTime = True
@@ -191,8 +192,8 @@ class GameWindow:
                 self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
                 self.init_enemy()
             else:
-                if keys[pygame.K_z]:
-                    self.algorithm = (self.algorithm + 1) % 3
+                '''if keys[pygame.K_z]:
+                    self.algorithm = (self.algorithm + 1) % 3'''
                 if keys[pygame.K_LEFT] or keys[pygame.K_a] or my_keys[0]:
                     self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed, 0)
                     self.character.isLeft = True
@@ -225,7 +226,7 @@ class GameWindow:
                 self.calc = PathCalc(self.map.mapArr)
                 self.way = self.calc.start_smpl_bfs(self.get_ch_pos())'''
 
-            self.draw_map(time, self.way)
+            self.draw_map(time, self.way, all_way)
             pygame.display.update()
 
     def ch_automatic_move(self, way):
@@ -253,18 +254,33 @@ class GameWindow:
                 keys[2] = 1  # jump
         return keys
 
-    def draw_way(self, way):
+    def draw_way(self, way, war):
         for i in range(len(way)):
             x = way[i][0]
             y = way[i][1]
             x_size = int(self.blockSize * (1 - (i+1) / len(way))) + 3
             y_size = int((self.blockSize - x_size)/2)
             wayPos = (x*self.blockSize+y_size, y*self.blockSize+y_size, x_size, x_size)
-            pygame.draw.rect(self.gameArea, (i * 2 % 255, 0, i * 1 % 255), pygame.Rect(wayPos))
+            if war == 0:
+                pygame.draw.rect(self.gameArea, (i * 2 % 255, i * war % 255, i * 1 % 255), pygame.Rect(wayPos))
+            else:
+                r = max(int(x_size/2)-5, 5)
+                pygame.draw.circle(self.gameArea, ((100 + i * 2) % 255, (150 + war) % 255, (100 + i * 1) % 255),
+                                   ((x+0.5)*self.blockSize, (y+0.5)*self.blockSize), r)
 
-    def get_ch_pos(self):
-        x = int(self.character.chObj.x / self.blockSize)
-        y = int(self.character.chObj.y / self.blockSize) + 1
+    def find_ch_for_enemy(self):
+        all_way = []
+        for en in self.gameObj:
+            if en[2] != 6:
+                self.calc = PathCalc(self.map.mapArr)
+                en_way = self.calc.start_a_star(self.get_ch_pos(en[0].x, en[0].y),
+                                                self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
+                all_way.append(en_way)
+        return all_way
+
+    def get_ch_pos(self, x, y):
+        x = int(x / self.blockSize)
+        y = int(y / self.blockSize) + 1
         if y >= self.cubeCount:
             y = self.cubeCount - 1
         return [x, y]
@@ -278,12 +294,16 @@ class GameWindow:
                     en[0].x -= int(self.character.chSpeed * 0.75)
                 for block in self.allBlocks:
                     if en[0].colliderect(block):
-                        if en[1] == 0:
+                        if en[3] == 0 and en[2] == 7:
+                            en[0].bottom = block.top
+                            en[3] = 1
+                        if not en[3] == 0 and en[1] == 0:
                             en[0].right = block.left
                             en[1] = 1
-                        else:
+                        elif not en[3] == 0 and en[1] == 1:
                             en[0].left = block.right
                             en[1] = 0
+
                 for q in self.gameObj:
                     if en[0].colliderect(q[0]) and q != en:
                         if en[1] == 0:
@@ -292,18 +312,25 @@ class GameWindow:
                         else:
                             en[0].left = q[0].right
                             en[1] = 0
-                en[0].y += 5
+                en[0].y += int(self.character.chSpeed * 0.75)
                 if en[2] == 7:
                     onPlatform = False
                     for block in self.allBlocks:
-                        if en[0].colliderect(block):
+                        if en[0].colliderect(block) and en[0].bottom - int(self.character.chSpeed * 0.75) <= block.top \
+                                <= en[0].bottom:
                             onPlatform = True
                     if not onPlatform:
+                        en[3] = 0
                         if en[1] == 0:
                             en[1] = 1
                         else:
                             en[1] = 0
-                en[0].y -= 5
+                    else:
+                        en[3] = 1
+                en[0].y -= int(self.character.chSpeed * 0.75)
+
+                #if en[2] == 7 and en[3] == 0:
+                    #en[0].y += int(self.character.chSpeed * 0.75)
 
     def draw_enemy(self, time):
         for el in self.gameObj:
@@ -330,7 +357,7 @@ class GameWindow:
                 self.gameArea.blit(pygame.transform.scale(self.en3Img, (2 * self.blockSize, self.blockSize)),
                                    (el[0].x, el[0].y))
 
-    def draw_map(self, time, way):
+    def draw_map(self, time, way, all_way):
         self.allBlocks = []
         self.gameArea.fill(self.colors[3])
         gMap = self.map.get_map()
@@ -357,7 +384,9 @@ class GameWindow:
                 if 0 < gMap[a][b] < 6 and self.allBlocksSt[a][b] > 0:
                     self.allBlocks.append(pygame.Rect(pos))
 
-        self.draw_way(way)
+        self.draw_way(way, 0)
+        for en in range(len(all_way)):
+            self.draw_way(all_way[en], en+1)
         self.draw_enemy(time)
         self.draw_statistic()
         self.draw_ch(time)
@@ -433,7 +462,7 @@ class GameWindow:
         algorithmMenu = ['DFS', 'BFS', 'UCS']
         algorithmTxt = self.font.render("Algorithm: " + algorithmMenu[self.algorithm], False, self.colors[5])
         self.gameArea.blit(algorithmTxt, (x + 5, 15 * self.blockSize))
-        helpTxt = self.font.render("Z - change algorithm", False, self.colors[5])
-        self.gameArea.blit(helpTxt, (x + 5, 16 * self.blockSize))
+        '''helpTxt = self.font.render("Z - change algorithm", False, self.colors[5])
+        self.gameArea.blit(helpTxt, (x + 5, 16 * self.blockSize))'''
         helpTxt = self.font.render("Path len "+str(len(self.way)), False, self.colors[5])
-        self.gameArea.blit(helpTxt, (x + 5, 17 * self.blockSize))
+        self.gameArea.blit(helpTxt, (x + 5, 16 * self.blockSize))
