@@ -160,6 +160,7 @@ class GameWindow:
     def run_game_loop(self):
         time = 0
         while not self.character.isEnd:
+            self.gameArea = pygame.Surface(self.infoObj)
             pygame.time.delay(50)
             time += 50
             self.character.timePoint -= 50
@@ -168,6 +169,10 @@ class GameWindow:
                     self.character.isEnd = True
                     self.menu = False
             keys = pygame.key.get_pressed()
+            my_keys = [0, 0, 0]
+            self.calc = PathCalc(self.map.mapArr)
+            self.way = self.calc.start_smpl_bfs(self.get_ch_pos())
+            my_keys = self.ch_automatic_move(self.way)
             if keys[pygame.K_ESCAPE]:
                 self.character.isEnd = True
                 self.subMenuTime = True
@@ -177,7 +182,6 @@ class GameWindow:
                 self.allBlocksSt = [[10] * int(self.infoObj[0] * 0.75 / self.blockSize) for i in range(self.cubeCount)]
                 self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
                 time = 0
-                #self.calc = PathCalc(self.map.mapArr)
             elif keys[pygame.K_q]:
                 time = 0
                 self.gameObj = []
@@ -186,18 +190,17 @@ class GameWindow:
                 self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
                 self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
                 self.init_enemy()
-                #self.calc = PathCalc(self.map.mapArr)
             else:
                 if keys[pygame.K_z]:
                     self.algorithm = (self.algorithm + 1) % 3
-                if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                if keys[pygame.K_LEFT] or keys[pygame.K_a] or my_keys[0]:
                     self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed, 0)
                     self.character.isLeft = True
-                if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                if keys[pygame.K_RIGHT] or keys[pygame.K_d] or my_keys[1]:
                     self.character.isLeft = False
                     self.map.mapArr = self.character.type_of_collision(self.allBlocks, self.character.chSpeed, 0)
                 if not self.character.isJump:
-                    if keys[pygame.K_SPACE] and not self.character.inAir:
+                    if (keys[pygame.K_SPACE] or my_keys[2]) and not self.character.inAir:
                         self.character.isUp = True
                         self.character.inAir = True
                         self.character.set_jump(True)
@@ -218,16 +221,37 @@ class GameWindow:
                 self.subMenuTime = True
                 self.sub_menu('YOU WIN! YOU SCORE: '+str(int(self.character.timePoint / 50) + 500 * self.character.keysC))
             self.enemy_logic()
-            self.calc = PathCalc(self.map.mapArr)
-            if self.algorithm == 0:
-                self.way = self.calc.start_dfs(self.get_ch_pos())
-            elif self.algorithm == 1:
-                self.way = self.calc.start_bfs(self.get_ch_pos())
-            else:
-                self.way = self.calc.start_uniform_cost_search(self.get_ch_pos())
+            '''if time % 200 == 0:
+                self.calc = PathCalc(self.map.mapArr)
+                self.way = self.calc.start_smpl_bfs(self.get_ch_pos())'''
 
             self.draw_map(time, self.way)
             pygame.display.update()
+
+    def ch_automatic_move(self, way):
+        keys = [0, 0, 0]
+        if len(way) > 0:
+            x1 = way[0][0]
+            if self.character.chObj.x > x1 * self.blockSize and self.character.isLeft:
+                keys[0] = 1
+            elif self.character.chObj.x < x1 * self.blockSize and not self.character.isLeft:
+                keys[1] = 1
+        if len(way) > 1:
+            x1 = way[0][0]
+            x2 = way[1][0]
+            y1 = way[0][1]
+            y2 = way[1][1]
+            if x1 > x2:
+                keys[0] = 1  # left
+            elif x1 < x2:
+                keys[1] = 1  # right
+            elif len(way) > 2 and x1 > way[2][0]:
+                keys[0] = 1  # left
+            elif len(way) > 2 and x1 < way[2][0]:
+                keys[1] = 1  # right
+            if y1 > y2:
+                keys[2] = 1  # jump
+        return keys
 
     def draw_way(self, way):
         for i in range(len(way)):

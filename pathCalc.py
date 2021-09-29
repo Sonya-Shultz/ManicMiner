@@ -37,7 +37,7 @@ class PathCalc:
                 self.max_key = 0
         self.end_time = time.time()
         self.time = (-self.start_time+self.end_time)*1000
-        print("DFS time is " + str(self.time) + "ms")
+        # print("DFS time is " + str(self.time) + "ms")
         return self.way
 
     def count_k(self):
@@ -75,7 +75,7 @@ class PathCalc:
         return list_of_near
 
     def is_free(self, pos, is_down, list_n):
-        ok_state = [0, 4, 5, 6, 7, 8]
+        ok_state = [0, 4, 5, 7, 8]
         if -1 < pos[0] < self.x_len and -1 < pos[1] < self.y_len:
             if is_down:
                 if self.used[pos[1]][pos[0]] == 0 and self.graph[pos[1]][pos[0]] in ok_state + [3]:
@@ -96,6 +96,34 @@ class PathCalc:
         h.reverse()
         return h
 
+    def start_smpl_bfs(self, pos):
+        self.way = []
+        self.start_time = time.time()
+        self.count_k()
+        self.used = [[0] * int(self.x_len) for j in range(self.y_len)]
+        pos_n = [pos[0], pos[1]]
+        parents = [[0, 0] * int(self.x_len) for j in range(self.y_len)]
+        self.key_count = 0
+        if self.max_key > 0:
+            pos_n, parents = self.step_bfs(pos_n, pos_n, [], parents, False)
+            if pos_n[0] != pos[0] or pos[1] != pos_n[1]:
+                self.max_key -= 1
+                h_arr = self.find_way(parents, pos, pos_n)
+                for j in range(1, len(h_arr)):
+                    self.way.append(h_arr[j])
+            else:
+                self.max_key = 0
+        else:
+            pos_n, parents = self.step_bfs(pos_n, pos_n, [], parents, True)
+            if pos_n[0] != pos[0] or pos[1] != pos_n[1]:
+                h_arr = self.find_way(parents, pos, pos_n)
+                for j in range(1, len(h_arr)):
+                    self.way.append(h_arr[j])
+        self.end_time = time.time()
+        self.time = (-self.start_time + self.end_time) * 1000
+        # print("BFS time is " + str(self.time) + "ms")
+        return self.way
+
     def start_bfs(self, pos):
         self.way = []
         self.start_time = time.time()
@@ -105,7 +133,7 @@ class PathCalc:
         parents = [[0, 0] * int(self.x_len) for j in range(self.y_len)]
         while self.max_key > 0:
             self.key_count = 0
-            pos_n, parents = self.step_bfs(pos_n, pos_n, [], parents)
+            pos_n, parents = self.step_bfs(pos_n, pos_n, [], parents, False)
             if pos_n[0] != pos[0] or pos[1] != pos_n[1]:
                 self.max_key -= 1
                 h_arr = self.find_way(parents, pos, pos_n)
@@ -116,10 +144,10 @@ class PathCalc:
                 self.max_key = 0
         self.end_time = time.time()
         self.time = (-self.start_time + self.end_time) * 1000
-        print("BFS time is " + str(self.time) + "ms")
+        # print("BFS time is " + str(self.time) + "ms")
         return self.way
 
-    def step_bfs(self, pos, new_pos, stack_h, parents):
+    def step_bfs(self, pos, new_pos, stack_h, parents, is_end):
         self.used[pos[1]][pos[0]] = 1
         list_of_near = self.find_near(pos)
         for p in range(len(list_of_near)):
@@ -130,10 +158,12 @@ class PathCalc:
             self.key_count += 1
             self.graph[pos[1]][pos[0]] = 0
             new_pos = [pos[0], pos[1]]
+        if self.graph[pos[1]][pos[0]] == 5 and is_end:
+            new_pos = [pos[0], pos[1]]
         else:
             if self.key_count < 1 and len(stack_h) > 0:
                 h_pos = stack_h.pop(0)
-                new_pos, parents = self.step_bfs(h_pos, new_pos, stack_h, parents)
+                new_pos, parents = self.step_bfs(h_pos, new_pos, stack_h, parents, is_end)
         self.used[pos[1]][pos[0]] = 0
         return new_pos, parents
 
@@ -158,7 +188,7 @@ class PathCalc:
                 self.max_key = 0
         self.end_time = time.time()
         self.time = (-self.start_time + self.end_time) * 1000
-        print("UCS time is " + str(self.time) + "ms")
+        # print("UCS time is " + str(self.time) + "ms")
         return self.way
 
     def step_ucs(self, pos, new_pos, stack_h, parents, dist):
