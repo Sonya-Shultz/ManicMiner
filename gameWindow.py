@@ -59,19 +59,19 @@ class GameWindow:
         pygame.quit()
 
     def init_enemy(self):
-        gMap = self.map.get_map()
-        for a in range(len(gMap)):
-            for b in range(len(gMap[a])):
+        g_map = self.map.get_map()
+        for a in range(len(g_map)):
+            for b in range(len(g_map[a])):
                 pos = int(b * self.blockSize), int(a * self.blockSize), int(self.blockSize), int(self.blockSize)
-                if gMap[a][b] == 6:
+                if g_map[a][b] == 6:
                     self.gameArea.blit(pygame.transform.scale(self.en1Img, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
                     self.gameObj.append([pygame.Rect(pos), 0, 6, 1])
-                if gMap[a][b] == 7:
-                    self.gameArea.blit(pygame.transform.scale(self.en2Img[0], (self.blockSize - 5, self.blockSize - 5)),
+                if g_map[a][b] == 7:
+                    self.gameArea.blit(pygame.transform.scale(self.en2Img[0], (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
                     self.gameObj.append([pygame.Rect(pos), 0, 7, 1])
-                if gMap[a][b] == 8:
+                if g_map[a][b] == 8:
                     self.gameArea.blit(pygame.transform.scale(self.en3Img, (2 * self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
                     self.gameObj.append([pygame.Rect(int(b * self.blockSize), int(a * self.blockSize),
@@ -96,25 +96,25 @@ class GameWindow:
             pygame.display.update()
 
     def draw_menu(self):
-        textMenu = ['Q - exit from game', 'Return/enter - start game']
+        text_menu = ['Q - exit from game', 'Return/enter - start game']
         self.gameArea.fill(self.colors[2])
-        for i in range(len(textMenu)):
-            menuTxt = self.font.render(textMenu[i], False, self.colors[5])
-            x = int((self.infoObj[0] - menuTxt.get_width())/2)
-            self.gameArea.blit(menuTxt, (x, (5 + i * 2) * self.blockSize))
+        for i in range(len(text_menu)):
+            menu_txt = self.font.render(text_menu[i], False, self.colors[5])
+            x = int((self.infoObj[0] - menu_txt.get_width())/2)
+            self.gameArea.blit(menu_txt, (x, (5 + i * 2) * self.blockSize))
         self.win.blit(pygame.transform.scale(self.gameArea, self.infoObj), (0, 0))
 
     def sub_menu(self, text):
-        textMenu = [text, 'Q - exit from game', 'Return/enter - continue', 'R - start new game']
+        text_menu = [text, 'Q - exit from game', 'Return/enter - continue', 'R - start new game']
         time = 0
         while self.subMenuTime:
             pygame.time.delay(50)
             time += 50
             self.gameArea.fill(self.colors[2])
-            for i in range(len(textMenu)):
-                menuTxt = self.font.render(textMenu[i], False, self.colors[5])
-                x = int((self.infoObj[0] - menuTxt.get_width()) / 2)
-                self.gameArea.blit(menuTxt, (x, (5 + i * 2) * self.blockSize))
+            for i in range(len(text_menu)):
+                menu_txt = self.font.render(text_menu[i], False, self.colors[5])
+                x = int((self.infoObj[0] - menu_txt.get_width()) / 2)
+                self.gameArea.blit(menu_txt, (x, (5 + i * 2) * self.blockSize))
             self.win.blit(pygame.transform.scale(self.gameArea, self.infoObj), (0, 0))
             pygame.display.update()
             for event in pygame.event.get():
@@ -169,7 +169,6 @@ class GameWindow:
                     self.character.isEnd = True
                     self.menu = False
             keys = pygame.key.get_pressed()
-            my_keys = [0, 0, 0]
             self.calc = PathCalc(self.map.mapArr)
             self.way = self.calc.start_smpl_bfs(self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
             my_keys = self.ch_automatic_move(self.way)
@@ -195,11 +194,11 @@ class GameWindow:
                 '''if keys[pygame.K_z]:
                     self.algorithm = (self.algorithm + 1) % 3'''
                 if keys[pygame.K_LEFT] or keys[pygame.K_a] or my_keys[0]:
-                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed, 0)
+                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed + 2, 0)
                     self.character.isLeft = True
                 if keys[pygame.K_RIGHT] or keys[pygame.K_d] or my_keys[1]:
                     self.character.isLeft = False
-                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, self.character.chSpeed, 0)
+                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, self.character.chSpeed - 2, 0)
                 if not self.character.isJump:
                     if (keys[pygame.K_SPACE] or my_keys[2]) and not self.character.inAir:
                         self.character.isUp = True
@@ -221,11 +220,10 @@ class GameWindow:
                 self.character.isEnd = True
                 self.subMenuTime = True
                 self.sub_menu('YOU WIN! YOU SCORE: '+str(int(self.character.timePoint / 50) + 500 * self.character.keysC))
-            self.enemy_logic()
+            self.enemy_logic(all_way)
             '''if time % 200 == 0:
                 self.calc = PathCalc(self.map.mapArr)
                 self.way = self.calc.start_smpl_bfs(self.get_ch_pos())'''
-
             self.draw_map(time, self.way, all_way)
             pygame.display.update()
 
@@ -260,9 +258,9 @@ class GameWindow:
             y = way[i][1]
             x_size = int(self.blockSize * (1 - (i+1) / len(way))) + 3
             y_size = int((self.blockSize - x_size)/2)
-            wayPos = (x*self.blockSize+y_size, y*self.blockSize+y_size, x_size, x_size)
+            way_pos = (x*self.blockSize+y_size, y*self.blockSize+y_size, x_size, x_size)
             if war == 0:
-                pygame.draw.rect(self.gameArea, (i * 2 % 255, i * war % 255, i * 1 % 255), pygame.Rect(wayPos))
+                pygame.draw.rect(self.gameArea, (i * 2 % 255, i * war % 255, i * 1 % 255), pygame.Rect(way_pos))
             else:
                 r = max(int(x_size/2)-5, 5)
                 pygame.draw.circle(self.gameArea, ((100 + i * 2) % 255, (150 + war) % 255, (100 + i * 1) % 255),
@@ -273,9 +271,12 @@ class GameWindow:
         for en in self.gameObj:
             if en[2] != 6:
                 self.calc = PathCalc(self.map.mapArr)
-                en_way = self.calc.start_a_star(self.get_ch_pos(en[0].x, en[0].y),
-                                                self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
+                en_pos = self.get_ch_pos(en[0].x, en[0].y)
+                en_pos[1] -= 1
+                en_way = self.calc.start_a_star(en_pos, self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
                 all_way.append(en_way)
+            else:
+                all_way.append([])
         return all_way
 
     def get_ch_pos(self, x, y):
@@ -285,52 +286,53 @@ class GameWindow:
             y = self.cubeCount - 1
         return [x, y]
 
-    def enemy_logic(self):
+    def decide_to_move(self, en, en_id, all_way):
+        if len(all_way) > en_id > -1 and len(all_way[en_id]) > 0:
+            if -5 < all_way[en_id][len(all_way[en_id])-1][1] - all_way[en_id][0][1] < 5:
+                if all_way[en_id][len(all_way[en_id])-1][0] > all_way[en_id][0][0]:
+                    en[1] = 0
+                else:
+                    en[1] = 1
+
+        if en[1] == 0:
+            en[0].x += int(self.character.chSpeed * 0.75)
+        else:
+            en[0].x -= int(self.character.chSpeed * 0.75)
+
+        return en
+
+    def enemy_logic(self, all_way):
         for en in self.gameObj:
             if en[2] != 6:
-                if en[1] == 0:
-                    en[0].x += int(self.character.chSpeed * 0.75)
-                else:
-                    en[0].x -= int(self.character.chSpeed * 0.75)
-                for block in self.allBlocks:
-                    if en[0].colliderect(block):
-                        if en[3] == 0 and en[2] == 7:
+                if en[2] == 7:
+                    on_platform = False
+                    en[0].y += int(self.character.chSpeed * 0.75)
+                    for block in self.allBlocks:
+                        if en[0].colliderect(block):
+                            on_platform = True
                             en[0].bottom = block.top
                             en[3] = 1
-                        if not en[3] == 0 and en[1] == 0:
+
+                    if not on_platform:
+                        en[3] = 0
+
+                en = self.decide_to_move(en, self.gameObj.index(en), all_way)
+
+                for block in self.allBlocks:
+                    if en[0].colliderect(block):
+                        if en[1] == 0:
                             en[0].right = block.left
-                            en[1] = 1
-                        elif not en[3] == 0 and en[1] == 1:
+                        else:
                             en[0].left = block.right
-                            en[1] = 0
+                        en[1] = (en[1] + 1) % 2
 
                 for q in self.gameObj:
                     if en[0].colliderect(q[0]) and q != en:
                         if en[1] == 0:
                             en[0].right = q[0].left
-                            en[1] = 1
                         else:
                             en[0].left = q[0].right
-                            en[1] = 0
-                en[0].y += int(self.character.chSpeed * 0.75)
-                if en[2] == 7:
-                    onPlatform = False
-                    for block in self.allBlocks:
-                        if en[0].colliderect(block) and en[0].bottom - int(self.character.chSpeed * 0.75) <= block.top \
-                                <= en[0].bottom:
-                            onPlatform = True
-                    if not onPlatform:
-                        en[3] = 0
-                        if en[1] == 0:
-                            en[1] = 1
-                        else:
-                            en[1] = 0
-                    else:
-                        en[3] = 1
-                en[0].y -= int(self.character.chSpeed * 0.75)
-
-                #if en[2] == 7 and en[3] == 0:
-                    #en[0].y += int(self.character.chSpeed * 0.75)
+                        en[1] = (en[1] + 1) % 2
 
     def draw_enemy(self, time):
         for el in self.gameObj:
@@ -360,28 +362,28 @@ class GameWindow:
     def draw_map(self, time, way, all_way):
         self.allBlocks = []
         self.gameArea.fill(self.colors[3])
-        gMap = self.map.get_map()
-        for a in range(len(gMap)):
-            for b in range(len(gMap[a])):
+        g_map = self.map.get_map()
+        for a in range(len(g_map)):
+            for b in range(len(g_map[a])):
                 pos = int(b * self.blockSize), int(a * self.blockSize), int(self.blockSize), int(self.blockSize)
-                if gMap[a][b] == 1:
+                if g_map[a][b] == 1:
                     self.gameArea.blit(pygame.transform.scale(self.testImg, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
-                if gMap[a][b] == 2:
+                if g_map[a][b] == 2:
                     self.gameArea.blit(pygame.transform.scale(self.cImg, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
-                if gMap[a][b] == 3:
+                if g_map[a][b] == 3:
                     self.gameArea.blit(pygame.transform.scale(self.bImg, (self.blockSize,
                                                                           int(self.blockSize * self.allBlocksSt[a][
                                                                               b] / 10))),
                                        (self.blockSize * b, self.blockSize * a))
-                if gMap[a][b] == 4:
+                if g_map[a][b] == 4:
                     self.gameArea.blit(pygame.transform.scale(self.dImg, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
-                if gMap[a][b] == 5:
+                if g_map[a][b] == 5:
                     self.gameArea.blit(pygame.transform.scale(self.eImg, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
-                if 0 < gMap[a][b] < 6 and self.allBlocksSt[a][b] > 0:
+                if 0 < g_map[a][b] < 6 and self.allBlocksSt[a][b] > 0:
                     self.allBlocks.append(pygame.Rect(pos))
 
         self.draw_way(way, 0)
@@ -430,39 +432,39 @@ class GameWindow:
     def draw_statistic(self):
         x = int(self.infoObj[0] * 0.75 / self.blockSize) * self.blockSize
         pygame.draw.rect(self.gameArea, self.colors[2], pygame.Rect(x, 0, self.infoObj[0]-x, self.infoObj[1]))
-        timeTxt = self.font.render('AIR', False, self.colors[5])
-        timePos = (x, 2 * self.blockSize, int(self.infoObj[0] - x), self.blockSize)
-        timeInnerPos = (x + timeTxt.get_width() + 5, 2 * self.blockSize + 5,
-                        int(self.infoObj[0] - x - timeTxt.get_width() - 10), self.blockSize - 10)
-        timeFillPos = (x + timeTxt.get_width() + 5, 2 * self.blockSize + 5, int((self.infoObj[0] - x -
-                                    timeTxt.get_width() - 10) * self.character.timePoint / 100000), self.blockSize - 10)
-        scorePos = (x, 6 * self.blockSize, int(self.infoObj[0] - x), self.blockSize)
+        time_txt = self.font.render('AIR', False, self.colors[5])
+        time_pos = (x, 2 * self.blockSize, int(self.infoObj[0] - x), self.blockSize)
+        time_inner_pos = (x + time_txt.get_width() + 5, 2 * self.blockSize + 5,
+                        int(self.infoObj[0] - x - time_txt.get_width() - 10), self.blockSize - 10)
+        time_fill_pos = (x + time_txt.get_width() + 5, 2 * self.blockSize + 5, int((self.infoObj[0] - x
+                                - time_txt.get_width() - 10) * self.character.timePoint / 100000), self.blockSize - 10)
+        score_pos = (x, 6 * self.blockSize, int(self.infoObj[0] - x), self.blockSize)
 
-        pygame.draw.rect(self.gameArea, self.colors[3], pygame.Rect(timePos))
-        pygame.draw.rect(self.gameArea, self.colors[4], pygame.Rect(timeFillPos))
-        pygame.draw.rect(self.gameArea, self.colors[1], pygame.Rect(timeInnerPos), 3)
-        self.gameArea.blit(timeTxt, (x, 2 * self.blockSize + 5))
+        pygame.draw.rect(self.gameArea, self.colors[3], pygame.Rect(time_pos))
+        pygame.draw.rect(self.gameArea, self.colors[4], pygame.Rect(time_fill_pos))
+        pygame.draw.rect(self.gameArea, self.colors[1], pygame.Rect(time_inner_pos), 3)
+        self.gameArea.blit(time_txt, (x, 2 * self.blockSize + 5))
 
         for i in range(self.character.life):
-            lifePos = (x + i * int((self.infoObj[0] - x) / 3), 7 * self.blockSize,)
-            lifeSize = (int((self.infoObj[0] - x) / 3), int((self.infoObj[0] - x) / 3))
-            self.gameArea.blit(pygame.transform.scale(self.lImg, lifeSize), lifePos)
+            life_pos = (x + i * int((self.infoObj[0] - x) / 3), 7 * self.blockSize,)
+            life_size = (int((self.infoObj[0] - x) / 3), int((self.infoObj[0] - x) / 3))
+            self.gameArea.blit(pygame.transform.scale(self.lImg, life_size), life_pos)
 
-        scoreTxt = self.font.render('SCORE ' + str(int(self.character.timePoint / 50) + 500 * self.character.keysC),
+        score_txt = self.font.render('SCORE ' + str(int(self.character.timePoint / 50) + 500 * self.character.keysC),
                                     False, self.colors[5])
-        pygame.draw.rect(self.gameArea, self.colors[3], pygame.Rect(scorePos))
-        xScore = int((self.infoObj[0] - x - scoreTxt.get_width()) / 2)
-        self.gameArea.blit(scoreTxt, (x + xScore, 6 * self.blockSize + 5))
+        pygame.draw.rect(self.gameArea, self.colors[3], pygame.Rect(score_pos))
+        x_score = int((self.infoObj[0] - x - score_txt.get_width()) / 2)
+        self.gameArea.blit(score_txt, (x + x_score, 6 * self.blockSize + 5))
 
-        textMenu = ['R - replay lvl', 'Q - generate again', 'Esc - exit to menu']
-        for i in range(len(textMenu)):
-            menuTxt = self.font.render(textMenu[i], False, self.colors[5])
-            self.gameArea.blit(menuTxt, (x + 5, (11 + i*1) * self.blockSize))
+        text_menu = ['R - replay lvl', 'Q - generate again', 'Esc - exit to menu']
+        for i in range(len(text_menu)):
+            menu_txt = self.font.render(text_menu[i], False, self.colors[5])
+            self.gameArea.blit(menu_txt, (x + 5, (11 + i*1) * self.blockSize))
 
-        algorithmMenu = ['DFS', 'BFS', 'UCS']
-        algorithmTxt = self.font.render("Algorithm: " + algorithmMenu[self.algorithm], False, self.colors[5])
-        self.gameArea.blit(algorithmTxt, (x + 5, 15 * self.blockSize))
-        '''helpTxt = self.font.render("Z - change algorithm", False, self.colors[5])
-        self.gameArea.blit(helpTxt, (x + 5, 16 * self.blockSize))'''
-        helpTxt = self.font.render("Path len "+str(len(self.way)), False, self.colors[5])
-        self.gameArea.blit(helpTxt, (x + 5, 16 * self.blockSize))
+        algorithm_menu = ['DFS', 'BFS', 'UCS']
+        algorithm_txt = self.font.render("Algorithm: " + algorithm_menu[self.algorithm], False, self.colors[5])
+        self.gameArea.blit(algorithm_txt, (x + 5, 15 * self.blockSize))
+        '''help_txt = self.font.render("Z - change algorithm", False, self.colors[5])
+        self.gameArea.blit(help_txt, (x + 5, 16 * self.blockSize))'''
+        help_txt = self.font.render("Path len "+str(len(self.way)), False, self.colors[5])
+        self.gameArea.blit(help_txt, (x + 5, 16 * self.blockSize))

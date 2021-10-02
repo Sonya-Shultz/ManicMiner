@@ -270,7 +270,7 @@ class PathCalc:
 
     @staticmethod
     def calc_way(ch_pos, el):
-        return math.sqrt((ch_pos[0]-el[0])**2 + (ch_pos[1]-el[1])**2)
+        return int(math.sqrt((ch_pos[0]-el[0])**2 + (ch_pos[1]-el[1])**2))
 
     @staticmethod
     def retouch_dist(stack_h, pos, dist):
