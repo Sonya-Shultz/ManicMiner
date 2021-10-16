@@ -13,6 +13,8 @@ class GameMap:
     def __init__(self, x, cubeCount):
         self.extension = (x, cubeCount)
         self.mapArr = [[0] * x for i in range(cubeCount)]
+        self.fly_en_count = 3
+        self.run_en_count = 3
         self.create_block_frame()
         self.generate_lvl()
         self.create_key()
@@ -103,6 +105,7 @@ class GameMap:
 
     def create_mov_enemy(self):
         enemyCount = random.randint(1, 5)
+        enemyCount = self.run_en_count
         for i in range(enemyCount):
             isTake = True
             x = 0
@@ -114,6 +117,7 @@ class GameMap:
                     isTake = False
             self.mapArr[y][x] = 7
         enemyCount = random.randint(1, 5)
+        enemyCount = self.fly_en_count
         for i in range(enemyCount):
             isTake = True
             x = 0

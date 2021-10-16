@@ -1,4 +1,6 @@
 # Клас для ігрового вікна
+import random
+
 import pygame
 from hero import GameHero
 from gameMap import GameMap
@@ -38,7 +40,8 @@ class GameWindow:
         self.menu = True
         self.menu = True
         self.subMenuTime = False
-        self.algorithm = 1
+        self.algorithm = 0
+        self.algorithmName = ["minimax", "alpha-beta pruning", "expectimax"]
         self.testImg = pygame.image.load("img/b1.png")
         self.cImg = pygame.image.load("img/b2.png")
         self.bImg = pygame.image.load("img/b3.png")
@@ -52,6 +55,7 @@ class GameWindow:
         self.init_enemy()
         self.calc = {}
         self.way = []
+        self.gameTime = 0
 
         while self.menu or not self.character.isEnd or self.subMenuTime:
             self.run_menu_loop()
@@ -94,6 +98,13 @@ class GameWindow:
                 self.menu = False
             self.draw_menu()
             pygame.display.update()
+
+    def write_result(self, file_name):
+        isWin = "lose"
+        if self.character.isWin:
+            isWin = "win"
+        point = int(self.character.timePoint / 50) + 500 * self.character.keysC
+        print(isWin, self.gameTime, point)
 
     def draw_menu(self):
         text_menu = ['Q - exit from game', 'Return/enter - start game']
@@ -163,6 +174,7 @@ class GameWindow:
             self.gameArea = pygame.Surface(self.infoObj)
             pygame.time.delay(50)
             time += 50
+            self.gameTime += 50
             self.character.timePoint -= 50
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -182,17 +194,19 @@ class GameWindow:
                 self.allBlocksSt = [[10] * int(self.infoObj[0] * 0.75 / self.blockSize) for i in range(self.cubeCount)]
                 self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
                 time = 0
+                self.gameTime = 0
             elif keys[pygame.K_q]:
-                time = 0
                 self.gameObj = []
                 self.allBlocks = []
                 self.map = GameMap(int(self.infoObj[0] * 0.75 / self.blockSize), self.cubeCount)
                 self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
                 self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
                 self.init_enemy()
+                time = 0
+                self.gameTime = 0
             else:
-                '''if keys[pygame.K_z]:
-                    self.algorithm = (self.algorithm + 1) % 3'''
+                if keys[pygame.K_z]:
+                    self.algorithm = (self.algorithm + 1) % 3
                 if keys[pygame.K_LEFT] or keys[pygame.K_a] or my_keys[0]:
                     self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed + 2, 0)
                     self.character.isLeft = True
@@ -215,10 +229,14 @@ class GameWindow:
                 self.character.isEnd = True
                 self.character.isWin = False
                 self.subMenuTime = True
+                self.write_result("data.csv")
+                self.gameTime = 0
                 self.sub_menu('YOU LOSE (')
             if self.character.isWin:
                 self.character.isEnd = True
                 self.subMenuTime = True
+                self.write_result("data.csv")
+                self.gameTime = 0
                 self.sub_menu('YOU WIN! YOU SCORE: '+str(int(self.character.timePoint / 50) + 500 * self.character.keysC))
             self.enemy_logic(all_way)
             '''if time % 200 == 0:
@@ -287,12 +305,15 @@ class GameWindow:
         return [x, y]
 
     def decide_to_move(self, en, en_id, all_way):
-        if len(all_way) > en_id > -1 and len(all_way[en_id]) > 0:
-            if -5 < all_way[en_id][len(all_way[en_id])-1][1] - all_way[en_id][0][1] < 5:
-                if all_way[en_id][len(all_way[en_id])-1][0] > all_way[en_id][0][0]:
-                    en[1] = 0
-                else:
-                    en[1] = 1
+        if en[2] == 8:
+            en[1] = random.randint(0, 1)
+        else:
+            if len(all_way) > en_id > -1 and len(all_way[en_id]) > 0:
+                if -5 < all_way[en_id][len(all_way[en_id])-1][1] - all_way[en_id][0][1] < 5:
+                    if all_way[en_id][len(all_way[en_id])-1][0] > all_way[en_id][0][0]:
+                        en[1] = 0
+                    else:
+                        en[1] = 1
 
         if en[1] == 0:
             en[0].x += int(self.character.chSpeed * 0.75)
@@ -427,6 +448,8 @@ class GameWindow:
                     self.character.isWin = False
                     self.subMenuTime = True
                     self.sub_menu('YOU LOSE!')
+                    self.write_result("data.csv")
+                    self.gameTime = 0
         return time
 
     def draw_statistic(self):
@@ -461,10 +484,9 @@ class GameWindow:
             menu_txt = self.font.render(text_menu[i], False, self.colors[5])
             self.gameArea.blit(menu_txt, (x + 5, (11 + i*1) * self.blockSize))
 
-        algorithm_menu = ['DFS', 'BFS', 'UCS']
-        algorithm_txt = self.font.render("Algorithm: " + algorithm_menu[self.algorithm], False, self.colors[5])
+        algorithm_txt = self.font.render("Algorithm: " + self.algorithmName[self.algorithm], False, self.colors[5])
         self.gameArea.blit(algorithm_txt, (x + 5, 15 * self.blockSize))
-        '''help_txt = self.font.render("Z - change algorithm", False, self.colors[5])
-        self.gameArea.blit(help_txt, (x + 5, 16 * self.blockSize))'''
-        help_txt = self.font.render("Path len "+str(len(self.way)), False, self.colors[5])
+        help_txt = self.font.render("Z - change algorithm", False, self.colors[5])
         self.gameArea.blit(help_txt, (x + 5, 16 * self.blockSize))
+        #help_txt = self.font.render("Path len "+str(len(self.way)), False, self.colors[5])
+        #self.gameArea.blit(help_txt, (x + 5, 17 * self.blockSize))
