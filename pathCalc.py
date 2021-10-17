@@ -242,7 +242,7 @@ class PathCalc:
 
     def step_a_star(self, pos, new_pos, stack_h, parents, dist, ch_pos):
         used_h = [[0] * int(self.x_len) for j in range(self.y_len)]
-        if len(used_h) < pos[1] < 0 or len(used_h[pos[1]]) < pos[0] < 0:
+        if len(used_h) <= pos[1] < 0 or len(used_h[pos[1]]) <= pos[0] < 0:
             return new_pos, parents
         used_h[pos[1]][pos[0]] = 1
 
@@ -285,67 +285,3 @@ class PathCalc:
         for el in h_list:
             stack_h.put((dist[el[1]][el[0]], el))
         return stack_h, dist
-
-# 0 - left, 1 - right, 2 - jump, 3 - not move
-    class minimaxTree:
-        def __init__(self):
-            self.max_dep = 5
-            self.cur_dep = 0
-            self.position = 0
-            self.score = None
-            self.parent = None
-            self.child = []
-            self.all_way = []
-
-        def setStartData(self, new_dep, pos, parent):
-            self.cur_dep = new_dep
-            self.position = pos
-            self.parent = parent
-
-    def minimaxCalc(self, pos, all_en):
-        first_node = self.minimaxTree()
-        self.minimax(first_node)
-        first_node.all_way.reverse()
-        print(first_node.all_way)
-
-    @staticmethod
-    def is_terminal_node(node):
-        # чисто чекнуть чи всі ключіі є і чи на виході вже
-        # якщо це термінальне, бо смерть, то 2ийпараметр - фолс
-        return False, True
-
-    def minimax(self, new_node):
-        if new_node.parent is not None:
-            new_node.all_way = new_node.parent.all_way.copy()
-        new_node.all_way.append(new_node.position)
-        isTerminal, isWin = self.is_terminal_node(new_node)
-        if isTerminal:
-            new_node.score = 500
-            # тут треба написать таке, щоб воно рахувало оцінку відносного того, де вороги будуть, де чел буде і коли
-        if new_node.cur_dep == new_node.cur_dep:
-            new_node.score = 100
-            # тут треба написать таке, щоб воно рахувало оцінку відносного того, де вороги будуть, де чел буде і коли
-            # і не забудь що час в залежності від довжини "шляху"
-            # тобто грати в гру без показу цього
-            # костиль: не обновлять екран, але пройтись грою по ньому, а потім повернути все до записаного значення
-            # дописати алг на тему розуміння термінальних станів
-        for i in range(0, 4):
-            child_node = self.minimaxTree()
-            child_node.setStartData(new_node.cur_dep+1, i, new_node)
-            self.minimax(child_node)
-        if new_node.cur_dep % 2 == 0:
-            max_score = 0
-            index = 0
-            for el in range(len(new_node.child)):
-                if new_node.child[el].score > max_score:
-                    max_score = new_node.child[el].score
-                    index = el
-            new_node.all_way = new_node.child[index].all_way
-        else:
-            min_score = 100000
-            index = 0
-            for el in range(len(new_node.child)):
-                if new_node.child[el].score < min_score:
-                    min_score = new_node.child[el].score
-                    index = el
-            new_node.all_way = new_node.child[index].all_way

@@ -5,6 +5,7 @@ import pygame
 from hero import GameHero
 from gameMap import GameMap
 from pathCalc import PathCalc
+from miniMax import MiniMaxAlg
 
 # colors
 # (150, 150, 150) - gray
@@ -29,7 +30,7 @@ class GameWindow:
 
         self.cubeCount = 20
         self.blockSize = int(self.infoObj[1] / 20)
-        self.character = GameHero(0, 0, 0, 0, 0, False, 0)
+        self.character = GameHero(0, 0, 0, False, 0)
         self.map = GameMap(int(self.infoObj[0] * 0.75 / self.blockSize), self.cubeCount)
         self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
         self.allBlocks = []
@@ -52,6 +53,7 @@ class GameWindow:
                        pygame.image.load("img/en3m2.png"), pygame.image.load("img/en3m3.png")]
         self.en3Img = pygame.image.load("img/en3.png")
         self.lImg = pygame.image.load("img/life.png")
+        self.init_map()
         self.init_enemy()
         self.calc = {}
         self.way = []
@@ -173,77 +175,92 @@ class GameWindow:
         while not self.character.isEnd:
             self.gameArea = pygame.Surface(self.infoObj)
             pygame.time.delay(50)
-            time += 50
-            self.gameTime += 50
-            self.character.timePoint -= 50
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.character.isEnd = True
-                    self.menu = False
-            keys = pygame.key.get_pressed()
-            self.calc = PathCalc(self.map.mapArr)
-            self.way = self.calc.start_smpl_bfs(self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
-            my_keys = self.ch_automatic_move(self.way)
-            all_way = self.find_ch_for_enemy()
-            if keys[pygame.K_ESCAPE]:
-                self.character.isEnd = True
-                self.subMenuTime = True
-                self.sub_menu('PAUSE')
-            elif keys[pygame.K_r]:
-                self.map.mapArr = [self.startMapArr[i].copy() for i in range(len(self.startMapArr))]
-                self.allBlocksSt = [[10] * int(self.infoObj[0] * 0.75 / self.blockSize) for i in range(self.cubeCount)]
-                self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
-                time = 0
-                self.gameTime = 0
-            elif keys[pygame.K_q]:
-                self.gameObj = []
-                self.allBlocks = []
-                self.map = GameMap(int(self.infoObj[0] * 0.75 / self.blockSize), self.cubeCount)
-                self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
-                self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
-                self.init_enemy()
-                time = 0
-                self.gameTime = 0
-            else:
-                if keys[pygame.K_z]:
-                    self.algorithm = (self.algorithm + 1) % 3
-                if keys[pygame.K_LEFT] or keys[pygame.K_a] or my_keys[0]:
-                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed + 2, 0)
-                    self.character.isLeft = True
-                if keys[pygame.K_RIGHT] or keys[pygame.K_d] or my_keys[1]:
-                    self.character.isLeft = False
-                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, self.character.chSpeed - 2, 0)
-                if not self.character.isJump:
-                    if (keys[pygame.K_SPACE] or my_keys[2]) and not self.character.inAir:
-                        self.character.isUp = True
-                        self.character.inAir = True
-                        self.character.set_jump(True)
-                    if not self.character.collisionTypes['bottom']:
-                        self.character.inAir = True
-                        self.character.isDown = True
-                        self.map.mapArr = self.character.type_of_collision(self.allBlocks, 0, 3 * self.character.chSpeed)
-                else:
-                    self.character.do_jump(self.allBlocks)
-                time = self.enemy_death(time)
-            if self.character.timePoint <= 0:
-                self.character.isEnd = True
-                self.character.isWin = False
-                self.subMenuTime = True
-                self.write_result("data.csv")
-                self.gameTime = 0
-                self.sub_menu('YOU LOSE (')
-            if self.character.isWin:
-                self.character.isEnd = True
-                self.subMenuTime = True
-                self.write_result("data.csv")
-                self.gameTime = 0
-                self.sub_menu('YOU WIN! YOU SCORE: '+str(int(self.character.timePoint / 50) + 500 * self.character.keysC))
-            self.enemy_logic(all_way)
-            '''if time % 200 == 0:
-                self.calc = PathCalc(self.map.mapArr)
-                self.way = self.calc.start_smpl_bfs(self.get_ch_pos())'''
-            self.draw_map(time, self.way, all_way)
+
+            time, all_way = self.game_loop_logic(time, True)
+
+            #self.draw_map(time, self.way, all_way)
             pygame.display.update()
+
+    def game_loop_logic(self, time, is_game):
+        time += 50
+        self.gameTime += 50
+        self.character.timePoint -= 50
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.character.isEnd = True
+                self.menu = False
+        keys = pygame.key.get_pressed()
+        self.calc = PathCalc(self.map.mapArr)
+        self.way = self.calc.start_smpl_bfs(self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
+        my_keys = self.ch_automatic_move(self.way)
+        all_way = self.find_ch_for_enemy()
+        if keys[pygame.K_ESCAPE]:
+            self.character.isEnd = True
+            self.subMenuTime = True
+            self.sub_menu('PAUSE')
+        elif keys[pygame.K_r]:
+            self.map.mapArr = [self.startMapArr[i].copy() for i in range(len(self.startMapArr))]
+            self.allBlocksSt = [[10] * int(self.infoObj[0] * 0.75 / self.blockSize) for i in range(self.cubeCount)]
+            self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
+            time = 0
+            self.gameTime = 0
+        elif keys[pygame.K_q]:
+            self.gameObj = []
+            self.allBlocks = []
+            self.map = GameMap(int(self.infoObj[0] * 0.75 / self.blockSize), self.cubeCount)
+            self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
+            self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
+            self.init_enemy()
+            time = 0
+            self.gameTime = 0
+        else:
+            if keys[pygame.K_z]:
+                self.algorithm = (self.algorithm + 1) % 3
+            if keys[pygame.K_LEFT] or keys[pygame.K_a] or my_keys[0]:
+                self.map.mapArr = self.character.type_of_collision(self.allBlocks, -self.character.chSpeed + 2, 0)
+                self.character.isLeft = True
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d] or my_keys[1]:
+                self.character.isLeft = False
+                self.map.mapArr = self.character.type_of_collision(self.allBlocks, self.character.chSpeed - 2, 0)
+            if not self.character.isJump:
+                if (keys[pygame.K_SPACE] or my_keys[2]) and not self.character.inAir:
+                    self.character.isUp = True
+                    self.character.inAir = True
+                    self.character.set_jump(True)
+                if not self.character.collisionTypes['bottom']:
+                    self.character.inAir = True
+                    self.character.isDown = True
+                    self.map.mapArr = self.character.type_of_collision(self.allBlocks, 0, 3 * self.character.chSpeed)
+            else:
+                self.character.do_jump(self.allBlocks)
+            time = self.enemy_death(time)
+        if self.character.timePoint <= 0:
+            self.character.isEnd = True
+            self.character.isWin = False
+            self.subMenuTime = True
+            self.write_result("data.csv")
+            self.gameTime = 0
+            self.sub_menu('YOU LOSE (')
+        if self.character.isWin:
+            self.character.isEnd = True
+            self.subMenuTime = True
+            self.write_result("data.csv")
+            self.gameTime = 0
+            self.sub_menu('YOU WIN! YOU SCORE: ' + str(int(self.character.timePoint / 50) + 500 * self.character.keysC))
+        self.enemy_logic(all_way)
+
+        if is_game:
+            self.draw_map(time, self.way, all_way)
+
+        arr_h = self.ch_minimax_alg_move()
+        return time, all_way
+
+    def ch_minimax_alg_move(self):
+        keys = [0, 0, 0]
+        minimax_alg = MiniMaxAlg(self.map.mapArr, self.allBlocks, self.gameObj, self.character)
+        minimax_alg.minimax_calc()
+        return keys
 
     def ch_automatic_move(self, way):
         keys = [0, 0, 0]
@@ -329,9 +346,9 @@ class GameWindow:
                     on_platform = False
                     en[0].y += int(self.character.chSpeed * 0.75)
                     for block in self.allBlocks:
-                        if en[0].colliderect(block):
+                        if en[0].colliderect(block[0]):
                             on_platform = True
-                            en[0].bottom = block.top
+                            en[0].bottom = block[0].top
                             en[3] = 1
 
                     if not on_platform:
@@ -340,11 +357,11 @@ class GameWindow:
                 en = self.decide_to_move(en, self.gameObj.index(en), all_way)
 
                 for block in self.allBlocks:
-                    if en[0].colliderect(block):
+                    if en[0].colliderect(block[0]):
                         if en[1] == 0:
-                            en[0].right = block.left
+                            en[0].right = block[0].left
                         else:
-                            en[0].left = block.right
+                            en[0].left = block[0].right
                         en[1] = (en[1] + 1) % 2
 
                 for q in self.gameObj:
@@ -380,9 +397,7 @@ class GameWindow:
                 self.gameArea.blit(pygame.transform.scale(self.en3Img, (2 * self.blockSize, self.blockSize)),
                                    (el[0].x, el[0].y))
 
-    def draw_map(self, time, way, all_way):
-        self.allBlocks = []
-        self.gameArea.fill(self.colors[3])
+    def init_map(self):
         g_map = self.map.get_map()
         for a in range(len(g_map)):
             for b in range(len(g_map[a])):
@@ -405,11 +420,31 @@ class GameWindow:
                     self.gameArea.blit(pygame.transform.scale(self.eImg, (self.blockSize, self.blockSize)),
                                        (self.blockSize * b, self.blockSize * a))
                 if 0 < g_map[a][b] < 6 and self.allBlocksSt[a][b] > 0:
-                    self.allBlocks.append(pygame.Rect(pos))
+                    self.allBlocks.append([pygame.Rect(pos), g_map[a][b]])
 
-        self.draw_way(way, 0)
-        for en in range(len(all_way)):
-            self.draw_way(all_way[en], en+1)
+    def draw_map(self, time, way, all_way):
+        self.gameArea.fill(self.colors[3])
+        for el in self.allBlocks:
+            if el[1] == 1:
+                self.gameArea.blit(pygame.transform.scale(self.testImg, (self.blockSize, self.blockSize)),
+                                   (el[0].x, el[0].y))
+            if el[1] == 2:
+                self.gameArea.blit(pygame.transform.scale(self.cImg, (self.blockSize, self.blockSize)),
+                                   (el[0].x, el[0].y))
+            if el[1] == 3:
+                self.gameArea.blit(pygame.transform.scale(self.bImg, (self.blockSize, int(self.blockSize *
+                                    self.allBlocksSt[int(el[0].y/self.blockSize)][int(el[0].x/self.blockSize)] / 10))),
+                                   (el[0].x, el[0].y))
+            if el[1] == 4:
+                self.gameArea.blit(pygame.transform.scale(self.dImg, (self.blockSize, self.blockSize)),
+                                   (el[0].x, el[0].y))
+            if el[1] == 5:
+                self.gameArea.blit(pygame.transform.scale(self.eImg, (self.blockSize, self.blockSize)),
+                                   (el[0].x, el[0].y))
+
+        #self.draw_way(way, 0)
+        #for en in range(len(all_way)):
+            #self.draw_way(all_way[en], en+1)
         self.draw_enemy(time)
         self.draw_statistic()
         self.draw_ch(time)
@@ -489,4 +524,4 @@ class GameWindow:
         help_txt = self.font.render("Z - change algorithm", False, self.colors[5])
         self.gameArea.blit(help_txt, (x + 5, 16 * self.blockSize))
         #help_txt = self.font.render("Path len "+str(len(self.way)), False, self.colors[5])
-        #self.gameArea.blit(help_txt, (x + 5, 17 * self.blockSize))
+        #self.gameArea.blit(help_txt, (x + 5, 16 * self.blockSize))

@@ -1,9 +1,10 @@
 # Клас для персонажа гри
 import pygame
+import copy
 
 
 class GameHero:
-    def __init__(self, hight, width, x, y, speed, isJump, jumpCount):
+    def __init__(self, hight, width, speed, isJump, jumpCount):
         self.chHight = hight
         self.chWidth = width
         self.chSpeed = speed
@@ -26,6 +27,28 @@ class GameHero:
         self.timePoint = 100000
         self.isWin = False
         self.keysC = 0
+
+    def copy_ch(self):
+        # hero_new = copy.deepcopy(self)
+        hero_new = GameHero(self.chHight, self.chWidth, self.chSpeed, self.isJump, self.jumpCount)
+        hero_new.maxJump = self.maxJump
+        hero_new.blockSize = self.blockSize
+        hero_new.mapArr = [self.mapArr[i].copy() for i in range(len(self.mapArr))]
+        hero_new.allBlockSt = [self.allBlockSt[i].copy() for i in range(len(self.allBlockSt))]
+        hero_new.chObj = pygame.Rect(self.chObj)
+        hero_new.chImg = {}
+        hero_new.collision = self.collision.copy()
+        hero_new.collisionTypes = self.collisionTypes.copy()
+        hero_new.inAir = self.inAir
+        hero_new.isUp = self.isUp
+        hero_new.isDown = self.isDown
+        hero_new.isEnd = self.isEnd
+        hero_new.life = self.life
+        hero_new.isLeft = self.isLeft
+        hero_new.timePoint = self.timePoint
+        hero_new.isWin = self.isWin
+        hero_new.keysC = self.keysC
+        return hero_new
 
     def start_pos(self, size, cubeC, map, allBlockSt):
         self.isUp = False
@@ -56,14 +79,14 @@ class GameHero:
     def collision_check(self, allBlock, x, y):
         self.collision = []
         for block in allBlock:
-            blockMaterial = self.mapArr[int(block.y / self.blockSize)][int(block.x / self.blockSize)]
+            blockMaterial = block[1]
             if blockMaterial == 2:
-                if self.chObj.colliderect(block):
-                    if self.isDown and self.chObj.y + self.chHight - y <= block.y:
+                if self.chObj.colliderect(block[0]):
+                    if self.isDown and self.chObj.y + self.chHight - y <= block[0].y:
                         self.collision.append(block)
-                    elif not self.isDown and not self.isUp and self.chObj.y + self.chHight - y <= block.y:
+                    elif not self.isDown and not self.isUp and self.chObj.y + self.chHight - y <= block[0].y:
                         self.collision.append(block)
-            elif self.chObj.colliderect(block):
+            elif self.chObj.colliderect(block[0]):
                 self.collision.append(block)
         return self.collision
 
@@ -72,39 +95,39 @@ class GameHero:
         self.chObj.x += deltaX
         self.collision = self.collision_check(allBlock, deltaX, deltaY)
         for block in self.collision:
-            blockMaterial = self.mapArr[int(block.y/self.blockSize)][int(block.x/self.blockSize)]
+            blockMaterial = block[1]
             if blockMaterial == 1 or blockMaterial == 3:
                 if deltaX > 0:
-                    self.chObj.right = block.left
+                    self.chObj.right = block[0].left
                     self.collisionTypes['right'] = True
                 elif deltaX < 0:
-                    self.chObj.left = block.right
+                    self.chObj.left = block[0].right
                     self.collisionTypes['left'] = True
         self.chObj.y += deltaY
         self.collision = self.collision_check(allBlock, deltaX, deltaY)
         for block in self.collision:
-            y = int(block.y/self.blockSize)
-            x = int(block.x/self.blockSize)
-            blockMaterial = self.mapArr[y][x]
+            y = int(block[0].y/self.blockSize)
+            x = int(block[0].x/self.blockSize)
+            blockMaterial = block[1]
             if blockMaterial == 1:
                 if deltaY > 0:
-                    self.chObj.bottom = block.top
+                    self.chObj.bottom = block[0].top
                     self.collisionTypes['bottom'] = True
                     self.inAir = False
                     self.isUp = self.isDown = False
                 elif deltaY < 0:
-                    self.chObj.top = block.bottom
+                    self.chObj.top = block[0].bottom
                     self.collisionTypes['top'] = True
                     self.isUp = self.isDown = False
             elif blockMaterial == 2:
                 if deltaY > 0:
-                    self.chObj.bottom = block.top
+                    self.chObj.bottom = block[0].top
                     self.collisionTypes['bottom'] = True
                     self.inAir = False
                     self.isUp = self.isDown = False
             elif blockMaterial == 3:
                 if deltaY > 0:
-                    self.chObj.bottom = block.top
+                    self.chObj.bottom = block[0].top
                     self.collisionTypes['bottom'] = True
                     self.inAir = False
                     self.isUp = self.isDown = False
@@ -113,14 +136,14 @@ class GameHero:
                     else:
                         self.mapArr[y][x] = 0
                 elif deltaY < 0:
-                    self.chObj.top = block.bottom
+                    self.chObj.top = block[0].bottom
                     self.collisionTypes['top'] = True
                     self.isUp = self.isDown = False
         self.collision = self.collision_check(allBlock, deltaX, deltaY)
         for block in self.collision:
-            y = int(block.y/self.blockSize)
-            x = int(block.x/self.blockSize)
-            blockMaterial = self.mapArr[y][x]
+            y = int(block[0].y/self.blockSize)
+            x = int(block[0].x/self.blockSize)
+            blockMaterial = block[1]
             if blockMaterial == 4:
                 self.mapArr[y][x] = 0
                 self.keysC += 1

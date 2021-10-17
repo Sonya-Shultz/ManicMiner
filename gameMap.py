@@ -13,8 +13,8 @@ class GameMap:
     def __init__(self, x, cubeCount):
         self.extension = (x, cubeCount)
         self.mapArr = [[0] * x for i in range(cubeCount)]
-        self.fly_en_count = 3
-        self.run_en_count = 3
+        self.fly_en_count = 1
+        self.run_en_count = 1
         self.create_block_frame()
         self.generate_lvl()
         self.create_key()
