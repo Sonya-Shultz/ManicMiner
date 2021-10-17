@@ -139,8 +139,59 @@ class MiniMaxAlg:
 
     def expectimax_calc(self):
         first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
-
+        self.expectimax(first_node, False)
         return first_node.all_way[0]
+
+    def expectimax(self, new_node, is_expect):
+        if new_node.parent is not None:
+            new_node.all_way = copy.deepcopy(new_node.parent.all_way)
+            if is_expect:
+                new_node.all_way.append(new_node.position)
+
+        if not is_expect:
+            is_terminal, is_win = self.is_terminal_node(new_node)
+            if is_terminal:
+                new_node.score = self.calc_score(new_node.character, new_node.parent.character,
+                                                 new_node.block_map) + 1000
+                return
+            if new_node.cur_dep >= new_node.max_dep:
+                new_node.score = self.calc_score(new_node.character, new_node.parent.character, new_node.block_map)
+                return
+            for i in range(0, 2):
+                child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
+                                              copy.deepcopy(new_node.all_block),
+                                              copy.deepcopy(new_node.enemy_map))
+                child_node.set_start_data(new_node.cur_dep + 1, new_node.position * 2 + i, new_node)
+
+                child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i,
+                                child_node.cur_dep, child_node.block_map, child_node.all_block, child_node.character,
+                                                                                                child_node.enemy_map)
+                child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i,
+                                child_node.cur_dep + 1, child_node.block_map, child_node.all_block, child_node.character,
+                                                                                                child_node.enemy_map)
+                new_node.child.append(child_node)
+                self.expectimax(child_node, True)
+            new_node.score = new_node.child[0].score
+            new_node.all_way = new_node.child[0].all_way
+            if new_node.score < new_node.child[1].score:
+                new_node.score = new_node.child[1].score
+                new_node.all_way = new_node.child[1].all_way
+            return
+        else:
+            for i in range(0, 2):
+                child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
+                                              copy.deepcopy(new_node.all_block),
+                                              copy.deepcopy(new_node.enemy_map))
+                child_node.set_start_data(new_node.cur_dep + 1, 0 if random.random() <= 0.55 else 1, new_node)
+
+                new_node.child.append(child_node)
+                self.expectimax(child_node, False)
+            new_node.score = new_node.child[0].score * 0.55 + new_node.child[1].score * 0.45
+            if random.random() >= 0.55:
+                new_node.all_way = new_node.child[1].all_way
+            else:
+                new_node.all_way = new_node.child[0].all_way
+        return
 
     @staticmethod
     def calc_score(character, parent_character, map_arr):
