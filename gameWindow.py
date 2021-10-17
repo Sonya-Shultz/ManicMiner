@@ -148,6 +148,7 @@ class GameWindow:
                 self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
                 self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
                 self.init_enemy()
+                self.init_map()
                 self.character.isEnd = False
                 self.subMenuTime = False
                 self.menu = False
@@ -160,6 +161,7 @@ class GameWindow:
                     self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
                     self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
                     self.init_enemy()
+                    self.init_map()
                 if self.character.life <= 0:
                     self.map.mapArr = [self.startMapArr[i].copy() for i in range(len(self.startMapArr))]
                     self.allBlocksSt = [[10] * int(self.infoObj[0] * 0.75 / self.blockSize) for i in
@@ -176,12 +178,11 @@ class GameWindow:
             self.gameArea = pygame.Surface(self.infoObj)
             pygame.time.delay(50)
 
-            time, all_way = self.game_loop_logic(time, True)
+            time, all_way = self.game_loop_logic(time)
 
-            #self.draw_map(time, self.way, all_way)
             pygame.display.update()
 
-    def game_loop_logic(self, time, is_game):
+    def game_loop_logic(self, time):
         time += 50
         self.gameTime += 50
         self.character.timePoint -= 50
@@ -192,9 +193,7 @@ class GameWindow:
                 self.menu = False
         keys = pygame.key.get_pressed()
         self.calc = PathCalc(self.map.mapArr)
-        self.way = self.calc.start_smpl_bfs(self.get_ch_pos(self.character.chObj.x, self.character.chObj.y))
-        my_keys = self.ch_automatic_move(self.way)
-        all_way = self.find_ch_for_enemy()
+        my_keys = self.ch_minimax_alg_move()
         if keys[pygame.K_ESCAPE]:
             self.character.isEnd = True
             self.subMenuTime = True
@@ -212,6 +211,7 @@ class GameWindow:
             self.character.start_pos(self.infoObj, self.cubeCount, self.map.get_map(), self.allBlocksSt)
             self.startMapArr = [self.map.mapArr[i].copy() for i in range(len(self.map.mapArr))]
             self.init_enemy()
+            self.init_map()
             time = 0
             self.gameTime = 0
         else:
@@ -248,18 +248,18 @@ class GameWindow:
             self.write_result("data.csv")
             self.gameTime = 0
             self.sub_menu('YOU WIN! YOU SCORE: ' + str(int(self.character.timePoint / 50) + 500 * self.character.keysC))
+        all_way = self.find_ch_for_enemy()
         self.enemy_logic(all_way)
 
-        if is_game:
-            self.draw_map(time, self.way, all_way)
-
-        arr_h = self.ch_minimax_alg_move()
+        self.draw_map(time, self.way, all_way)
         return time, all_way
 
     def ch_minimax_alg_move(self):
         keys = [0, 0, 0]
         minimax_alg = MiniMaxAlg(self.map.mapArr, self.allBlocks, self.gameObj, self.character)
-        minimax_alg.minimax_calc()
+        ind = minimax_alg.minimax_calc()
+        if -1 < ind < len(keys):
+            keys[ind] = 1
         return keys
 
     def ch_automatic_move(self, way):

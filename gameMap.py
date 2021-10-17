@@ -1,7 +1,7 @@
 # 1 - regular block
 # 2 - only top collision block
 # 3 - movable block
-# 4 - coin
+# 4 - key
 # 5 - exit
 # 6 - static enemy
 # 7 - walking enemy

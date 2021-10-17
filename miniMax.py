@@ -14,7 +14,7 @@ class MiniMaxAlg:
 
     class MinimaxTree:
         def __init__(self, ch, bl_map, all_bl, en):
-            self.max_dep = 3
+            self.max_dep = 5
             self.cur_dep = 0
             self.position = 0
             self.score = None
@@ -34,52 +34,90 @@ class MiniMaxAlg:
     def minimax_calc(self):
         first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
         self.minimax(first_node)
-        first_node.all_way.reverse()
-        #print(first_node.all_way)
+        return first_node.all_way[0]
+
+    def calc_score(self, character, parent_character, map_arr):
+        score = character.timePoint + character.keysC * 5000 + character.life * 1000
+        same_place = 0
+        if parent_character:
+            if parent_character.chObj.x == character.chObj.x:
+                same_place += 5000
+            if parent_character.chObj.y == character.chObj.y:
+                same_place += 5000
+            if parent_character.isLeft == character.isLeft:
+                score += 5500
+        score -= same_place
+        calc = PathCalc(copy.deepcopy(map_arr))
+        way = calc.start_smpl_bfs([int(character.chObj.x/character.blockSize), int(character.chObj.y/character.blockSize)+1])
+        way_point = 0
+        if len(way) > 1:
+            way_point += len(way) * character.blockSize * 3
+            way_point += ((way[len(way)-1][1]*character.blockSize - character.chObj.y)**2 + (way[len(way)-1][0]*character.blockSize - character.chObj.x)**2)**0.5
+            score -= way_point
+            if len(way) < 4:
+                score += (4-len(way)) * 1000
+                '''if (character.isLeft and way[len(way)-1][0]*character.blockSize <= character.chObj.x) or \
+                    (not character.isLeft and way[len(way)-1][0]*character.blockSize >= character.chObj.x):
+                    score += 3000'''
+        else:
+            score += 10000
+            if len(way) < 1:
+                score += 5000
+
+        '''if len(way) > 0:
+            score -= len(way) * character.blockSize
+            if len(way) <= 2:
+                score -= ((way[len(way)-1][1]*character.blockSize - character.chObj.y)**2 + (way[len(way)-1][0]*character.blockSize - character.chObj.x)**2)**0.5
+        '''
+        if character.inAir:
+            score -= 500 * character.jumpCount
+        if character.isEnd and not character.isWin:
+            score -= 50000
+        return score
 
     def minimax(self, new_node):
         if new_node.parent is not None:
-            new_node.all_way = new_node.parent.all_way.copy()
-        new_node.all_way.append(new_node.position)
+            new_node.all_way = copy.deepcopy(new_node.parent.all_way)
+        if new_node.cur_dep % 2 == 1:
+            new_node.all_way.append(new_node.position)
         is_terminal, is_win = self.is_terminal_node(new_node)
         if is_terminal:
-            new_node.score = 500
-            return new_node.all_way
-            # тут треба написать таке, щоб воно рахувало оцінку відносного того, де вороги будуть, де чел буде і коли
+            new_node.score = self.calc_score(new_node.character, new_node.parent.character, new_node.block_map) + 1000
+            return
         if new_node.cur_dep == new_node.max_dep:
-            new_node.score = 100
-            return new_node.all_way
-            # тут треба написать таке, щоб воно рахувало оцінку відносного того, де вороги будуть, де чел буде і коли
-            # і не забудь що час в залежності від довжини "шляху"
-            # тобто грати в гру без показу цього
-            # костиль: не обновлять екран, але пройтись грою по ньому, а потім повернути все до записаного значення
-            # дописати алг на тему розуміння термінальних станів
-        for i in range(0, 4):
-            child_node = self.MinimaxTree(new_node.character, new_node.block_map, new_node.all_block,
-                                          new_node.enemy_map)
-            child_node.set_start_data(new_node.cur_dep + 1, i, new_node)
-            new_node.child.append(child_node)
-            self.calc_one_step(i, child_node.cur_dep, child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
-            new_node.all_way = self.minimax(child_node)
+            new_node.score = self.calc_score(new_node.character, new_node.parent.character, new_node.block_map)
+            return
         if new_node.cur_dep % 2 == 0:
-            max_score = 0
+            for i in range(0, 4):
+                child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
+                                              copy.deepcopy(new_node.all_block),
+                                              copy.deepcopy(new_node.enemy_map))
+                child_node.set_start_data(new_node.cur_dep + 1, i, new_node)
+                child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i, child_node.cur_dep,
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+
+                new_node.child.append(child_node)
+                self.minimax(child_node)
+            max_score = -1000000
             index = 0
             for el in range(len(new_node.child)):
                 if new_node.child[el].score > max_score:
                     max_score = new_node.child[el].score
                     index = el
-            new_node.all_way = new_node.child[index].all_way
+            new_node.all_way = copy.deepcopy(new_node.child[index].all_way)
             new_node.score = new_node.child[index].score
         else:
-            min_score = 100000
-            index = 0
-            for el in range(len(new_node.child)):
-                if new_node.child[el].score < min_score:
-                    min_score = new_node.child[el].score
-                    index = el
-            new_node.all_way = new_node.child[index].all_way
-            new_node.score = new_node.child[index].score
-        return new_node.all_way
+            child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map), new_node.all_block,
+                                          copy.deepcopy(new_node.enemy_map))
+            child_node.set_start_data(new_node.cur_dep + 1, 3, new_node)
+            child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(3, child_node.cur_dep,
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+            self.minimax(child_node)
+            new_node.child.append(child_node)
+
+            new_node.all_way = copy.deepcopy(new_node.child[0].all_way)
+            new_node.score = new_node.child[0].score
+        return
 
     @staticmethod
     def is_terminal_node(node):
@@ -91,36 +129,36 @@ class MiniMaxAlg:
         return False, False
 
     def calc_one_step(self, move_direction, cur_dep, block_map, all_block, character, enemy):
-        character.timePoint -= 50
-        all_way = self.find_ch_for_enemy(enemy, block_map, character)
-        if move_direction == 0:
-            block_map = character.type_of_collision(all_block, -character.chSpeed + 2, 0)
-            character.isLeft = True
-        elif move_direction == 1:
-            character.isLeft = False
-            block_map = character.type_of_collision(all_block, character.chSpeed - 2, 0)
-        if not character.isJump:
-            if (move_direction == 2) and not self.character.inAir:
-                character.isUp = True
-                character.inAir = True
-                character.set_jump(True)
-            if not character.collisionTypes['bottom']:
-                character.inAir = True
-                character.isDown = True
-                block_map = character.type_of_collision(all_block, 0, 3 * character.chSpeed)
+        if cur_dep % 2 == 1:
+            character.timePoint -= 50
+            if move_direction == 0:
+                block_map = character.type_of_collision(all_block, -character.chSpeed + 2, 0)
+                character.isLeft = True
+            elif move_direction == 1:
+                character.isLeft = False
+                block_map = character.type_of_collision(all_block, character.chSpeed - 2, 0)
+            if not character.isJump:
+                if (move_direction == 2) and not self.character.inAir:
+                    character.isUp = True
+                    character.inAir = True
+                    character.set_jump(True)
+                if not character.collisionTypes['bottom']:
+                    character.inAir = True
+                    character.isDown = True
+                    block_map = character.type_of_collision(all_block, 0, 3 * character.chSpeed)
+            else:
+                character.do_jump(all_block)
+            self.character = self.enemy_death(self.enemy_map, self.character)
+            if character.timePoint <= 0:
+                character.isEnd = True
+                character.isWin = False
+            if character.isWin:
+                character.isEnd = True
         else:
-            character.do_jump(all_block)
-        self.character = self.enemy_death(self.enemy_map, self.character)
-        if character.timePoint <= 0:
-            character.isEnd = True
-            character.isWin = False
-        if character.isWin:
-            character.isEnd = True
-        self.enemy_logic(all_way, enemy, all_block, character)
-
-    def one_game_step(self, node):
-        return self.calc_one_step(node.position, node.cur_dep, node.block_map, node.all_block, node.character,
-                                  node.enemy_map)
+            all_way = self.find_ch_for_enemy(enemy, block_map, character)
+            self.enemy_logic(all_way, enemy, all_block, character)
+            #self.character = self.enemy_death(self.enemy_map, self.character)
+        return character, enemy, block_map
 
     @staticmethod
     def find_ch_for_enemy(enemy, map_arr, character):

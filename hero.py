@@ -146,6 +146,7 @@ class GameHero:
             blockMaterial = block[1]
             if blockMaterial == 4:
                 self.mapArr[y][x] = 0
+                allBlock.remove(block)
                 self.keysC += 1
             if blockMaterial == 5 and self.all_pick() == 0:
                 self.isEnd = True
