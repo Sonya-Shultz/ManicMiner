@@ -149,6 +149,8 @@ class PathCalc:
         return self.way
 
     def step_bfs(self, pos, new_pos, stack_h, parents, is_end):
+        if not (pos[1] < len(self.used) and pos[0] < len(self.used[pos[1]])):
+            return new_pos, parents
         self.used[pos[1]][pos[0]] = 1
         list_of_near = self.find_near(pos)
         for p in range(len(list_of_near)):

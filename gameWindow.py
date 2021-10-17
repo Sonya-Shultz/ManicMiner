@@ -41,7 +41,7 @@ class GameWindow:
         self.menu = True
         self.menu = True
         self.subMenuTime = False
-        self.algorithm = 0
+        self.algorithm = 1
         self.algorithmName = ["minimax", "alpha-beta pruning", "expectimax"]
         self.testImg = pygame.image.load("img/b1.png")
         self.cImg = pygame.image.load("img/b2.png")
@@ -257,7 +257,13 @@ class GameWindow:
     def ch_minimax_alg_move(self):
         keys = [0, 0, 0]
         minimax_alg = MiniMaxAlg(self.map.mapArr, self.allBlocks, self.gameObj, self.character)
-        ind = minimax_alg.minimax_calc()
+        ind = 0
+        if self.algorithm == 0:
+            ind = minimax_alg.minimax_calc()
+        elif self.algorithm == 1:
+            ind = minimax_alg.alpha_beta_calc()
+        else:
+            ind = minimax_alg.expectimax_calc()
         if -1 < ind < len(keys):
             keys[ind] = 1
         return keys

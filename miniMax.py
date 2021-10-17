@@ -17,7 +17,7 @@ class MiniMaxAlg:
             self.max_dep = 5
             self.cur_dep = 0
             self.position = 0
-            self.score = None
+            self.score = None # 1000000 if self.cur_dep%2 == 0 else -1000000
             self.parent = None
             self.child = []
             self.all_way = []
@@ -35,45 +35,6 @@ class MiniMaxAlg:
         first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
         self.minimax(first_node)
         return first_node.all_way[0]
-
-    def calc_score(self, character, parent_character, map_arr):
-        score = character.timePoint + character.keysC * 5000 + character.life * 1000
-        same_place = 0
-        if parent_character:
-            if parent_character.chObj.x == character.chObj.x:
-                same_place += 5000
-            if parent_character.chObj.y == character.chObj.y:
-                same_place += 5000
-            if parent_character.isLeft == character.isLeft:
-                score += 5500
-        score -= same_place
-        calc = PathCalc(copy.deepcopy(map_arr))
-        way = calc.start_smpl_bfs([int(character.chObj.x/character.blockSize), int(character.chObj.y/character.blockSize)+1])
-        way_point = 0
-        if len(way) > 1:
-            way_point += len(way) * character.blockSize * 3
-            way_point += ((way[len(way)-1][1]*character.blockSize - character.chObj.y)**2 + (way[len(way)-1][0]*character.blockSize - character.chObj.x)**2)**0.5
-            score -= way_point
-            if len(way) < 4:
-                score += (4-len(way)) * 1000
-                '''if (character.isLeft and way[len(way)-1][0]*character.blockSize <= character.chObj.x) or \
-                    (not character.isLeft and way[len(way)-1][0]*character.blockSize >= character.chObj.x):
-                    score += 3000'''
-        else:
-            score += 10000
-            if len(way) < 1:
-                score += 5000
-
-        '''if len(way) > 0:
-            score -= len(way) * character.blockSize
-            if len(way) <= 2:
-                score -= ((way[len(way)-1][1]*character.blockSize - character.chObj.y)**2 + (way[len(way)-1][0]*character.blockSize - character.chObj.x)**2)**0.5
-        '''
-        if character.inAir:
-            score -= 500 * character.jumpCount
-        if character.isEnd and not character.isWin:
-            score -= 50000
-        return score
 
     def minimax(self, new_node):
         if new_node.parent is not None:
@@ -118,6 +79,108 @@ class MiniMaxAlg:
             new_node.all_way = copy.deepcopy(new_node.child[0].all_way)
             new_node.score = new_node.child[0].score
         return
+
+    def alpha_beta_calc(self):
+        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
+        val = self.alpha_beta(first_node, -1000000, 1000000)
+        return first_node.all_way[0]
+
+    def alpha_beta(self, new_node, alpha, beta):
+        if new_node.parent is not None:
+            new_node.all_way = copy.deepcopy(new_node.parent.all_way)
+        if new_node.cur_dep % 2 == 1:
+            new_node.all_way.append(new_node.position)
+        is_terminal, is_win = self.is_terminal_node(new_node)
+        if new_node.cur_dep == new_node.max_dep:
+            new_node.score = self.calc_score(new_node.character, new_node.parent.character, new_node.block_map)
+            return new_node.score
+        if is_terminal:
+            new_node.score = self.calc_score(new_node.character, new_node.parent.character, new_node.block_map) + 1000
+            return new_node.score
+        if new_node.cur_dep % 2 == 0:
+            best = -1000000
+            ind = 0
+            for i in range(0, 4):
+                child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
+                                              copy.deepcopy(new_node.all_block),
+                                              copy.deepcopy(new_node.enemy_map))
+                child_node.set_start_data(new_node.cur_dep + 1, i, new_node)
+                child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i, child_node.cur_dep,
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+
+                child_node.score = self.alpha_beta(child_node, alpha, beta)
+                best = max(best, child_node.score)
+                if best == child_node.score:
+                    ind = i
+                alpha = max(alpha, best)
+                new_node.child.append(child_node)
+                if beta <= alpha:
+                    new_node.score = child_node.score
+                    new_node.all_way = copy.deepcopy(child_node.all_way)
+                    break
+            new_node.all_way = copy.deepcopy(new_node.child[ind].all_way)
+            return best
+        else:
+            best = 1000000
+            child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map), new_node.all_block,
+                                          copy.deepcopy(new_node.enemy_map))
+            child_node.set_start_data(new_node.cur_dep + 1, 3, new_node)
+            child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(3, child_node.cur_dep,
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+            child_node.score = self.alpha_beta(child_node, alpha, beta)
+            best = min(best, child_node.score)
+            beta = min(beta, best)
+            if beta <= alpha:
+                new_node.score = child_node.score
+            new_node.all_way = copy.deepcopy(child_node.all_way)
+            new_node.child.append(child_node)
+                #break
+            return best
+
+    def expectimax_calc(self):
+        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
+
+        return first_node.all_way[0]
+
+    @staticmethod
+    def calc_score(character, parent_character, map_arr):
+        score = character.timePoint + character.keysC * 5000 + character.life * 1000
+        same_place = 0
+        if parent_character:
+            if parent_character.chObj.x == character.chObj.x:
+                same_place += 5000
+            if parent_character.chObj.y == character.chObj.y:
+                same_place += 5000
+            if parent_character.isLeft == character.isLeft:
+                score += 5500
+        score -= same_place
+        calc = PathCalc(copy.deepcopy(map_arr))
+        way = calc.start_smpl_bfs([int(character.chObj.x/character.blockSize), int(character.chObj.y/character.blockSize)+1])
+        way_point = 0
+        if len(way) > 1:
+            way_point += len(way) * character.blockSize * 3
+            way_point += ((way[len(way)-1][1]*character.blockSize - character.chObj.y)**2 + (way[len(way)-1][0]*character.blockSize - character.chObj.x)**2)**0.5
+            score -= way_point
+            if len(way) < 4:
+                score += (4-len(way)) * 1000
+                '''if (character.isLeft and way[len(way)-1][0]*character.blockSize <= character.chObj.x) or \
+                    (not character.isLeft and way[len(way)-1][0]*character.blockSize >= character.chObj.x):
+                    score += 3000'''
+        else:
+            score += 10000
+            if len(way) < 1:
+                score += 5000
+
+        '''if len(way) > 0:
+            score -= len(way) * character.blockSize
+            if len(way) <= 2:
+                score -= ((way[len(way)-1][1]*character.blockSize - character.chObj.y)**2 + (way[len(way)-1][0]*character.blockSize - character.chObj.x)**2)**0.5
+        '''
+        if character.inAir:
+            score -= 500 * character.jumpCount
+        if character.isEnd and not character.isWin:
+            score -= 50000
+        return score
 
     @staticmethod
     def is_terminal_node(node):
