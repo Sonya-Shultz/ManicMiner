@@ -62,7 +62,7 @@ class GameHero:
         self.maxJump = int(size[1]/75)
         self.jumpCount = self.maxJump
         self.mapArr = map
-        self.chObj = pygame.Rect(self.blockSize + 5, self.blockSize * 17 - 5, self.chWidth, self.chHight)
+        self.chObj = pygame.Rect(self.blockSize + 5, self.blockSize * 17, self.chWidth, self.chHight)
         self.chImg = [pygame.image.load("img/c1.png"), pygame.image.load("img/c2.png"),
                       pygame.image.load("img/c3.png"), pygame.image.load("img/c4.png")]
         self.collisionTypes = {'top': False, 'right': False, 'bottom': False, 'left': False}
@@ -90,7 +90,7 @@ class GameHero:
                 self.collision.append(block)
         return self.collision
 
-    def type_of_collision(self, allBlock, deltaX, deltaY):
+    def type_of_collision(self, allBlockSt, allBlock, deltaX, deltaY):
         self.collisionTypes = {'top': False, 'right': False, 'bottom': False, 'left': False}
         self.chObj.x += deltaX
         self.collision = self.collision_check(allBlock, deltaX, deltaY)
@@ -131,8 +131,8 @@ class GameHero:
                     self.collisionTypes['bottom'] = True
                     self.inAir = False
                     self.isUp = self.isDown = False
-                    if self.allBlockSt[y][x] > 0:
-                        self.allBlockSt[y][x] -= 1
+                    if allBlockSt[y][x] > 0:
+                        allBlockSt[y][x] -= 1
                     else:
                         self.mapArr[y][x] = 0
                 elif deltaY < 0:
@@ -152,7 +152,7 @@ class GameHero:
                 self.isEnd = True
                 self.isWin = True
 
-        return self.mapArr
+        return self.mapArr, allBlockSt
 
     def do_jump(self, allBlock):
         if self.jumpCount >= -self.maxJump:
@@ -164,7 +164,7 @@ class GameHero:
                 self.isDown = False
             else:
                 self.isUp = self.isDown = False
-            self.mapArr = self.type_of_collision(allBlock, 0, -int((self.jumpCount * abs(self.jumpCount)) / 2))
+            self.mapArr, self.allBlockSt = self.type_of_collision(self.allBlockSt, allBlock, 0, -int((self.jumpCount * abs(self.jumpCount)) / 2))
             self.jumpCount -= 1
         else:
             self.isUp = self.isDown = False

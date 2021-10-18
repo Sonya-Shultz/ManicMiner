@@ -5,15 +5,16 @@ from pathCalc import PathCalc
 
 
 class MiniMaxAlg:
-    def __init__(self, mape, all_block, enemy, character):
+    def __init__(self, mape, all_block, enemy, character, st):
         self.way = []
         self.block_map = [mape[i].copy() for i in range(len(mape))]
         self.all_block = [all_block[i].copy() for i in range(len(all_block))]
         self.enemy_map = [enemy[i].copy() for i in range(len(enemy))]
         self.character = character.copy_ch()
+        self.blocks_st = [st[i].copy() for i in range(len(st))]
 
     class MinimaxTree:
-        def __init__(self, ch, bl_map, all_bl, en):
+        def __init__(self, ch, bl_map, all_bl, en, st):
             self.max_dep = 5
             self.cur_dep = 0
             self.position = 0
@@ -23,6 +24,7 @@ class MiniMaxAlg:
             self.all_way = []
             self.block_map = [bl_map[i].copy() for i in range(len(bl_map))]
             self.all_block = [all_bl[i].copy() for i in range(len(all_bl))]
+            self.all_blocks_st = [st[i].copy() for i in range(len(st))]
             self.enemy_map = [en[i].copy() for i in range(len(en))]
             self.character = ch.copy_ch()
 
@@ -32,7 +34,7 @@ class MiniMaxAlg:
             self.parent = parent
 
     def minimax_calc(self):
-        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
+        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map, self.blocks_st)
         self.minimax(first_node)
         return first_node.all_way[0]
 
@@ -52,10 +54,11 @@ class MiniMaxAlg:
             for i in range(0, 4):
                 child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
                                               copy.deepcopy(new_node.all_block),
-                                              copy.deepcopy(new_node.enemy_map))
+                                              copy.deepcopy(new_node.enemy_map), copy.deepcopy(new_node.all_blocks_st))
                 child_node.set_start_data(new_node.cur_dep + 1, i, new_node)
                 child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i, child_node.cur_dep,
-                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+                    child_node.block_map, child_node.all_block, child_node.character,
+                    child_node.enemy_map, child_node.all_blocks_st)
 
                 new_node.child.append(child_node)
                 self.minimax(child_node)
@@ -69,10 +72,10 @@ class MiniMaxAlg:
             new_node.score = new_node.child[index].score
         else:
             child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map), new_node.all_block,
-                                          copy.deepcopy(new_node.enemy_map))
+                                          copy.deepcopy(new_node.enemy_map), copy.deepcopy(new_node.all_blocks_st))
             child_node.set_start_data(new_node.cur_dep + 1, 3, new_node)
             child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(3, child_node.cur_dep,
-                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map, child_node.all_blocks_st)
             self.minimax(child_node)
             new_node.child.append(child_node)
 
@@ -81,7 +84,7 @@ class MiniMaxAlg:
         return
 
     def alpha_beta_calc(self):
-        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
+        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map, self.blocks_st)
         val = self.alpha_beta(first_node, -1000000, 1000000)
         return first_node.all_way[0]
 
@@ -103,10 +106,10 @@ class MiniMaxAlg:
             for i in range(0, 4):
                 child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
                                               copy.deepcopy(new_node.all_block),
-                                              copy.deepcopy(new_node.enemy_map))
+                                              copy.deepcopy(new_node.enemy_map), copy.deepcopy(new_node.all_blocks_st))
                 child_node.set_start_data(new_node.cur_dep + 1, i, new_node)
                 child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i, child_node.cur_dep,
-                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map, child_node.all_blocks_st)
 
                 child_node.score = self.alpha_beta(child_node, alpha, beta)
                 best = max(best, child_node.score)
@@ -123,10 +126,10 @@ class MiniMaxAlg:
         else:
             best = 1000000
             child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map), new_node.all_block,
-                                          copy.deepcopy(new_node.enemy_map))
+                                          copy.deepcopy(new_node.enemy_map), copy.deepcopy(new_node.all_blocks_st))
             child_node.set_start_data(new_node.cur_dep + 1, 3, new_node)
             child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(3, child_node.cur_dep,
-                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map)
+                                child_node.block_map, child_node.all_block, child_node.character, child_node.enemy_map, child_node.all_blocks_st)
             child_node.score = self.alpha_beta(child_node, alpha, beta)
             best = min(best, child_node.score)
             beta = min(beta, best)
@@ -138,7 +141,7 @@ class MiniMaxAlg:
             return best
 
     def expectimax_calc(self):
-        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map)
+        first_node = self.MinimaxTree(self.character, self.block_map, self.all_block, self.enemy_map, self.blocks_st)
         self.expectimax(first_node, False)
         return first_node.all_way[0]
 
@@ -160,15 +163,15 @@ class MiniMaxAlg:
             for i in range(0, 2):
                 child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
                                               copy.deepcopy(new_node.all_block),
-                                              copy.deepcopy(new_node.enemy_map))
+                                              copy.deepcopy(new_node.enemy_map), copy.deepcopy(new_node.all_blocks_st))
                 child_node.set_start_data(new_node.cur_dep + 1, new_node.position * 2 + i, new_node)
 
                 child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i,
                                 child_node.cur_dep, child_node.block_map, child_node.all_block, child_node.character,
-                                                                                                child_node.enemy_map)
+                                                                                                child_node.enemy_map, child_node.all_blocks_st)
                 child_node.character, child_node.enemy_map, child_node.block_map = self.calc_one_step(i,
                                 child_node.cur_dep + 1, child_node.block_map, child_node.all_block, child_node.character,
-                                                                                                child_node.enemy_map)
+                                                                                                child_node.enemy_map, child_node.all_blocks_st)
                 new_node.child.append(child_node)
                 self.expectimax(child_node, True)
             new_node.score = new_node.child[0].score
@@ -181,7 +184,7 @@ class MiniMaxAlg:
             for i in range(0, 2):
                 child_node = self.MinimaxTree(new_node.character.copy_ch(), copy.deepcopy(new_node.block_map),
                                               copy.deepcopy(new_node.all_block),
-                                              copy.deepcopy(new_node.enemy_map))
+                                              copy.deepcopy(new_node.enemy_map), copy.deepcopy(new_node.all_blocks_st))
                 child_node.set_start_data(new_node.cur_dep + 1, 0 if random.random() <= 0.55 else 1, new_node)
 
                 new_node.child.append(child_node)
@@ -242,15 +245,15 @@ class MiniMaxAlg:
         # якщо це термінальне, бо смерть, то 2ийпараметр - фолс
         return False, False
 
-    def calc_one_step(self, move_direction, cur_dep, block_map, all_block, character, enemy):
+    def calc_one_step(self, move_direction, cur_dep, block_map, all_block, character, enemy, all_blocks_st):
         if cur_dep % 2 == 1:
             character.timePoint -= 50
             if move_direction == 0:
-                block_map = character.type_of_collision(all_block, -character.chSpeed + 2, 0)
+                block_map, all_blocks_st = character.type_of_collision(all_blocks_st, all_block, -character.chSpeed + 2, 0)
                 character.isLeft = True
             elif move_direction == 1:
                 character.isLeft = False
-                block_map = character.type_of_collision(all_block, character.chSpeed - 2, 0)
+                block_map, all_blocks_st = character.type_of_collision(all_blocks_st, all_block, character.chSpeed - 2, 0)
             if not character.isJump:
                 if (move_direction == 2) and not self.character.inAir:
                     character.isUp = True
@@ -259,7 +262,7 @@ class MiniMaxAlg:
                 if not character.collisionTypes['bottom']:
                     character.inAir = True
                     character.isDown = True
-                    block_map = character.type_of_collision(all_block, 0, 3 * character.chSpeed)
+                    block_map, all_blocks_st = character.type_of_collision(all_blocks_st, all_block, 0, 3 * character.chSpeed)
             else:
                 character.do_jump(all_block)
             self.character = self.enemy_death(self.enemy_map, self.character)

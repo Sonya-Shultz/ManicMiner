@@ -244,8 +244,11 @@ class PathCalc:
 
     def step_a_star(self, pos, new_pos, stack_h, parents, dist, ch_pos):
         used_h = [[0] * int(self.x_len) for j in range(self.y_len)]
-        if len(used_h) <= pos[1] < 0 or len(used_h[pos[1]]) <= pos[0] < 0:
+        if len(used_h) <= pos[1] or pos[1] < 0:
             return new_pos, parents
+        else:
+            if len(used_h[pos[1]]) <= pos[0] or pos[0] < 0:
+                return new_pos, parents
         used_h[pos[1]][pos[0]] = 1
 
         dist[pos[1]][pos[0]] = 0
