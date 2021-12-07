@@ -1,0 +1,15 @@
+algorithm,isWin,time,score
+alpha-beta pruning,lose,8650,3327
+alpha-beta pruning,lose,7300,2000
+alpha-beta pruning,win,10350,3293
+alpha-beta pruning,win,20300,3094
+alpha-beta pruning,lose,11650,2000
+alpha-beta pruning,lose,7550,2000
+alpha-beta pruning,win,9250,2815
+alpha-beta pruning,lose,100000,0
+alpha-beta pruning,win,28000,2940
+alpha-beta pruning,lose,6900,2000
+alpha-beta pruning,lose,6200,2000
+alpha-beta pruning,lose,100000,0
+alpha-beta pruning,lose,28850,2000
+alpha-beta pruning,lose,26650,2000
